@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import sqlite3
 from sqlite3 import Connection
-import more_itertools
 
 from fastapi import FastAPI
 
@@ -31,11 +30,6 @@ def initialize_db(db_file: str) -> Connection:
 
     with open('schema/schema.sql') as file:
         conn.executescript(file.read())
-    with open('backup/data.sql') as file:
-        # for idx, piece in enumerate(read_in_chunks(file)):
-        for idx, chunk in enumerate(more_itertools.chunked(file.readlines(), 1024)):
-            print(f'chunk {idx}')
-            conn.executescript("\n".join(chunk))
     return conn
 
 
