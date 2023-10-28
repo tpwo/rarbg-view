@@ -1,0 +1,29 @@
+body {
+    font-family: Verdana;
+    text-align: center;
+}
+
+h1 {
+    font-size: x-large;
+
+}
+
+form {
+    padding: 10px;
+}
+
+input {
+    font-weight: bold;
+    font-size: medium;
+    padding: 8px;
+    width: 80px;
+}
+
+.search-box {
+    width: auto;
+}
+
+.timestamp-footer {
+    font-style: italic;
+    font-size: small;
+}

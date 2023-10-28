@@ -5,6 +5,9 @@ import sqlite3
 from sqlite3 import Connection
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
+from fastapi import Request
 
 
 DB_DIR = 'db'
@@ -33,37 +36,30 @@ def initialize_db(db_file: str) -> Connection:
     return conn
 
 
-def read_in_chunks(file, chunk: int = 1024):
-    while True:
-        data = file.read(chunk)
-        if not data:
-            break
-        yield data
-
-
 app = FastAPI()
 CONN = get_connection(DB_FILE)
+app.mount('/www', StaticFiles(directory='www', html=True), 'www')
 
 
 @app.get('/')
-def read_root():
-    return {'Hello': 'World'}
+def index(request: Request) -> RedirectResponse:
+    params = {item[0]: item[1] for item in request.query_params.multi_items()}
+    query = ''
+    for key, value in params.items():
+        if query == '':
+            query += '?'
+        query += f'{key}={value}&'
+    return RedirectResponse(url=f'/www/index.html{query}', status_code=302)
 
 
-@app.get('/count')
-def get_count() -> dict[str, int]:
+@app.get('/search')
+def get_count(query) -> object:
     with CONN as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT COUNT(*) from items')
-        count = int(cursor.fetchone()[0])
-        return {'count': count}
-
-@app.get('/get')
-def get_count(name) -> object:
-    with CONN as conn:
-        cursor = conn.cursor()
-        cursor.execute('SELECT title, cat, dt FROM items WHERE title LIKE ? LIMIT 100', (like_str(name),))
+        query_str = 'SELECT title, cat, dt FROM items WHERE title LIKE ? LIMIT 100'
+        cursor.execute(query_str, (like_str(query),))
         return {'result': cursor.fetchall()}
+
 
 def like_str(text: str) -> str:
     return '%' + text + '%'
