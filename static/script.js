@@ -12,9 +12,11 @@
     }
 
     async function search() {
-        var query = document.getElementById('search-box').value
-        await visitUrl(`../results?search_query=${query}`);
-    }
+        alert('Clicked me');
+        var query = document.getElementById('search-box').value;
+        window.location.href = `results?search_query=${query}`;
+        // await visitUrl(`results?search_query=${query}`);
+}
 
     async function visitUrl(url) {
         await fetch(url)

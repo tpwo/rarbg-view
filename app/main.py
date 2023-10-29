@@ -5,9 +5,10 @@ import sqlite3
 from sqlite3 import Connection
 
 from fastapi import FastAPI
-from fastapi import Request
-from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
+from fastapi import Request
+from fastapi.responses import HTMLResponse, FileResponse, Response
 
 
 DB_DIR = 'db'
@@ -42,14 +43,16 @@ app.mount('/static', StaticFiles(directory='static', html=True), 'static')
 
 
 @app.get('/')
-def index(request: Request) -> RedirectResponse:
+def index(request: Request):
     params = {item[0]: item[1] for item in request.query_params.multi_items()}
     query = ''
     for key, value in params.items():
         if query == '':
             query += '?'
         query += f'{key}={value}&'
-    return RedirectResponse(url=f'/www/index.html{query}', status_code=302)
+    # return RedirectResponse(url=f'/www/index.html{query}', status_code=302)
+    # return {'status': 200}
+    return FileResponse('www/index.html')
 
 
 @app.get('/results')
