@@ -5,7 +5,7 @@ repos:
     -   id: pyupgrade
         args: [--py311-plus]
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.3
+    rev: v0.1.14
     hooks:
       - id: ruff-format
       - id: ruff
@@ -28,7 +28,7 @@ repos:
     -   id: file-contents-sorter
         files: \.(docker|git)ignore
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.6.1
+    rev: v1.8.0
     hooks:
     -   id: mypy
         args: [--non-interactive, --install-types]
