@@ -8,17 +8,17 @@ CREATE TABLE IF NOT EXISTS "items" (
 	`ext_id`	TEXT,
 	`imdb`	TEXT
 );
-CREATE INDEX "ix__cat" ON "items" (
+CREATE INDEX IF NOT EXISTS "ix__cat" ON "items" (
 	"cat"	ASC
 );
-CREATE INDEX "ix__imdb" ON "items" (
+CREATE INDEX IF NOT EXISTS "ix__imdb" ON "items" (
 	"imdb"	ASC
 );
-CREATE INDEX "ix__ext_id" ON "items" (
+CREATE INDEX IF NOT EXISTS "ix__ext_id" ON "items" (
 	"ext_id"	ASC
 );
 
-CREATE VIEW magnet_links
+CREATE VIEW IF NOT EXISTS magnet_links
     AS SELECT
         id,
         title,
