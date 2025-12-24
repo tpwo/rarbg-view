@@ -1,0 +1,6 @@
+*.pyc
+.tox
+backup/
+db.sqlite
+db.zip
+db/
