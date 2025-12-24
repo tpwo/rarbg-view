@@ -13,6 +13,7 @@
 - Add JavaScript to fetch results from `/results?search_query={query}&page={page}&per_page=20`.
 - Render results in the DOM.
 - Add pagination controls (Next/Previous) to navigate pages.
+- Add a search form to the results page, with the current search term prepopulated, so users can search again directly from the results page.
 
 ### 2. Backend Changes
 - Add a new route `/search/{query}/{page}/` to serve the results page (HTML).
