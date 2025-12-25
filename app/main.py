@@ -95,15 +95,15 @@ def get_results(
 
         # Get paginated results (now including size and magnet link)
         query_str = (
-            "SELECT title, cat, dt, size, hash FROM items "
-            f"WHERE title LIKE ?{cat_filter} LIMIT ? OFFSET ?"
+            'SELECT title, cat, dt, size, hash FROM items '
+            f'WHERE title LIKE ?{cat_filter} LIMIT ? OFFSET ?'
         )
         params_page = params + [per_page, offset]
         cursor.execute(query_str, params_page)
         results = cursor.fetchall()
         # Return raw size in bytes, None if missing, date as YYYY-MM-DD, and magnet link
         results = [
-            (title, cat, just_date(dt), size, f"magnet:?xt=urn:btih:{hash_}&dn={title}")
+            (title, cat, just_date(dt), size, f'magnet:?xt=urn:btih:{hash_}&dn={title}')
             for (title, cat, dt, size, hash_) in results
         ]
         # Use dicts for clarity and to name the fields
@@ -115,7 +115,7 @@ def get_results(
 
 
 # Extract YYYY-MM-DD from ISO 8601 datetime string (e.g., '2023-12-25T14:23:00' -> '2023-12-25')
-def just_date(dt):
+def just_date(dt: str) -> str:
     """Extract YYYY-MM-DD from an ISO 8601 datetime string.
 
     This is done by trimming after the 10th character, as ISO 8601 date strings always have the date
