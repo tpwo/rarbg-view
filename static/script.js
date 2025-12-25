@@ -80,8 +80,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderResults(results, totalCount) {
         resultsContainer.style.display = '';
         // Per-page dropdown UI
+        // Calculate current range
+        let startIdx = totalCount === 0 ? 0 : ((page - 1) * perPage) + 1;
+        let endIdx = Math.min(page * perPage, totalCount);
+        let rangeText = totalCount === 0 ? '' : `${startIdx}-${endIdx}`;
         let perPageHtml = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em; margin-top: 0.5em; padding-top: 0.5em;">
-            <div class="results-count" style="font-size: 1.08em; color: #444;">${totalCount} result${totalCount === 1 ? '' : 's'} found</div>
+            <div class="results-count" style="font-size: 1.08em; color: #444;">
+                ${rangeText ? `<span class='results-range'>Showing results ${rangeText}<br></span> ` : ''}${totalCount} total found
+            </div>
             <div style="font-size: 1.08em; color: #444;">
                 <label for="per-page-select" style="margin-right: 0.4em;">Per page:</label>
                 <select id="per-page-select" style="font-size: 1em; padding: 0.1em 0.5em;">
