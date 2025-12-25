@@ -24,8 +24,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const page = parseInt(pathParts[2] || '1', 10);
     const resultsContainer = document.getElementById('results');
     const paginationContainer = document.getElementById('pagination');
-    const perPage = 20;
+    // Per-page dropdown state
+    const perPageOptions = [20, 40, 100];
     const urlParams = new URLSearchParams(window.location.search);
+    let perPage = 20;
+    if (urlParams.get('per_page')) {
+        const val = parseInt(urlParams.get('per_page'), 10);
+        if (perPageOptions.includes(val)) perPage = val;
+    }
     const sortCol = urlParams.get('sort_col') || 'title';
     const sortDir = urlParams.get('sort_dir') || 'asc';
 
@@ -73,7 +79,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderResults(results, totalCount) {
         resultsContainer.style.display = '';
+        // Per-page dropdown UI
+        let perPageHtml = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5em;">
+            <div class="results-count" style="font-size: 1.08em; color: #444;">${totalCount} result${totalCount === 1 ? '' : 's'} found</div>
+            <div style="font-size: 1.08em; color: #444;">
+                <label for="per-page-select" style="margin-right: 0.4em;">Per page:</label>
+                <select id="per-page-select" style="font-size: 1em; padding: 0.1em 0.5em;">
+                    ${perPageOptions.map(opt => `<option value="${opt}"${opt === perPage ? ' selected' : ''}>${opt}</option>`).join('')}
+                </select>
+            </div>
+        </div>`;
+        document.getElementById('per-page-container').innerHTML = perPageHtml;
+        document.getElementById('per-page-container').style.display = '';
+        setTimeout(() => {
+            const select = document.getElementById('per-page-select');
+            if (select) {
+                select.onchange = function() {
+                    const params = new URLSearchParams(window.location.search);
+                    params.set('per_page', select.value);
+                    // Always go to page 1 when per-page changes
+                    params.set('page', '1');
+                    // If using /search/{query}/{page}/ path, update location accordingly
+                    const pathParts = window.location.pathname.split('/').filter(Boolean);
+                    if (pathParts[0] === 'search' && pathParts.length >= 2) {
+                        let url = `/search/${encodeURIComponent(pathParts[1])}/1/`;
+                        const paramStr = params.toString();
+                        if (paramStr) url += `?${paramStr}`;
+                        window.location.href = url;
+                    } else {
+                        window.location.search = params.toString();
+                    }
+                };
+            }
+        }, 0);
         if (results.length === 0) {
+            document.getElementById('per-page-container').innerHTML = '';
+            document.getElementById('per-page-container').style.display = 'none';
             resultsContainer.innerHTML = '<p>No results found.</p>';
             paginationContainer.style.display = 'none';
             return;
@@ -90,7 +131,6 @@ document.addEventListener('DOMContentLoaded', function() {
             none: ''
         };
         resultsContainer.innerHTML = `
-            <div class="results-count" style="margin-bottom: 0.5em; font-size: 1.08em; color: #444;">${totalCount} result${totalCount === 1 ? '' : 's'} found</div>
             <table class="results-table compact-table">
                 <thead>
                     <tr>
