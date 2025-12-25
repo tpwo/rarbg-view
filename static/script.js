@@ -78,6 +78,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderResults(results, totalCount) {
+                // Category icon SVGs (simple, recognizable)
+                const categoryIcons = {
+                      'Movies': '<i class="bi bi-film" title="Movies" style="font-size: 1.25em;"></i>',
+                      'TV': '<i class="bi bi-tv" title="TV" style="font-size: 1.25em;"></i>',
+                      'Games': '<i class="bi bi-controller" title="Games" style="font-size: 1.25em;"></i>',
+                      'Music': '<i class="bi bi-music-note-beamed" title="Music" style="font-size: 1.25em;"></i>',
+                      'Books': '<i class="bi bi-book" title="Books" style="font-size: 1.25em;"></i>',
+                      'Software': '<i class="bi bi-cpu" title="Software" style="font-size: 1.25em;"></i>',
+                      'Adult': '<i class="bi bi-person-video" title="Adult" style="font-size: 1.25em;"></i>',
+                      'Other': '<i class="bi bi-folder" title="Other" style="font-size: 1.25em;"></i>'
+                };
+
+                // Helper to get top-level category from r.cat
+                function getTopLevelCategory(cat) {
+                    for (const [top, subs] of Object.entries({
+                        'Movies': new Set(['movies','movies_bd_full','movies_bd_remux','movies_x264','movies_x264_3d','movies_x264_4k','movies_x264_720','movies_x265','movies_x265_4k','movies_x265_4k_hdr','movies_xvid','movies_xvid_720']),
+                        'TV': new Set(['tv','tv_sd','tv_uhd']),
+                        'Games': new Set(['games_pc_iso','games_pc_rip','games_ps3','games_ps4','games_xbox360']),
+                        'Music': new Set(['music_flac','music_mp3']),
+                        'Books': new Set(['ebooks']),
+                        'Software': new Set(['software_pc_iso']),
+                        'Adult': new Set(['xxx'])
+                    })) {
+                        if (subs.has(cat)) return top;
+                    }
+                    return 'Other';
+                }
         resultsContainer.style.display = '';
         // Per-page dropdown UI
         // Calculate current range
@@ -147,11 +174,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${results.map(r => `
+                    ${results.map(r => {
+                        const topCat = getTopLevelCategory(r.cat);
+                        const icon = categoryIcons[topCat] || categoryIcons['Other'];
+                        return `
                         <tr class="result-card-row">
-                            <td class="result-title">
-                                <span class="badge">${escapeHtml(r.cat)}</span>
-                                ${escapeHtml(r.title)}
+                            <td class="result-title" style="display: flex; align-items: center; gap: 0.5em;">
+                                <span class="cat-icon" title="${escapeHtml(topCat)}">${icon}</span>
+                                <span style="vertical-align: middle;">${escapeHtml(r.title)}</span>
                             </td>
                             <td>${escapeHtml(r.date)}</td>
                             <td>${humanReadableSize(Number(r.size))}</td>
@@ -165,7 +195,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </a>
                             </td>
                         </tr>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </tbody>
             </table>
         `;
