@@ -1,5 +1,5 @@
 // Unified script for search, pagination, and timestamp
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
   // Timestamp in footer
   const ts = document.getElementById('timestamp');
   if (ts) ts.innerHTML = Date().toLocaleString();
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const searchBox = document.getElementById('search-box');
   if (searchBtn) searchBtn.addEventListener('click', doSearch);
   if (searchBox) {
-    searchBox.addEventListener('keydown', function (event) {
+    searchBox.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
         event.preventDefault();
         doSearch();
@@ -120,10 +120,10 @@ document.addEventListener('DOMContentLoaded', function () {
     resultsContainer.style.display = '';
     // Per-page dropdown UI
     // Calculate current range
-    let startIdx = totalCount === 0 ? 0 : (page - 1) * perPage + 1;
-    let endIdx = Math.min(page * perPage, totalCount);
-    let rangeText = totalCount === 0 ? '' : `${startIdx}-${endIdx}`;
-    let perPageHtml = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em; margin-top: 0.5em; padding-top: 0.5em;">
+    const startIdx = totalCount === 0 ? 0 : (page - 1) * perPage + 1;
+    const endIdx = Math.min(page * perPage, totalCount);
+    const rangeText = totalCount === 0 ? '' : `${startIdx}-${endIdx}`;
+    const perPageHtml = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em; margin-top: 0.5em; padding-top: 0.5em;">
             <div class="results-count" style="font-size: 1.08em; color: #444;">
                 ${rangeText ? `<span class='results-range'>Showing results ${rangeText}<br></span> ` : ''}${totalCount} total found
             </div>
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(() => {
       const select = document.getElementById('per-page-select');
       if (select) {
-        select.onchange = function () {
+        select.onchange = () => {
           const params = new URLSearchParams(window.location.search);
           params.set('per_page', select.value);
           // Always go to page 1 when per-page changes
@@ -328,17 +328,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  setTimeout(function () {
+  setTimeout(() => {
     if (searchBox) searchBox.value = query;
     const category = getCategoryFromUrl();
     const catSelect = document.getElementById('category-select');
     if (catSelect && category) catSelect.value = category;
   }, 0);
 
-  setTimeout(function () {
+  setTimeout(() => {
     const catSelect = document.getElementById('category-select');
     if (catSelect) {
-      catSelect.addEventListener('change', function () {
+      catSelect.addEventListener('change', () => {
         const queryVal = searchBox ? searchBox.value : '';
         if (!queryVal) return;
         let url = `/search/${encodeURIComponent(queryVal)}/1/`;
@@ -355,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Intercept magnet link clicks to stay in the same tab
-  document.body.addEventListener('click', function (e) {
+  document.body.addEventListener('click', (e) => {
     const target = e.target.closest('a.magnet-link');
     if (target) {
       e.preventDefault();
