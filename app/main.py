@@ -93,20 +93,23 @@ def get_results(
         cursor.execute(count_query, params)
         total_count = cursor.fetchone()[0]
 
-        # Get paginated results (now including size)
+        # Get paginated results (now including size and magnet link)
         query_str = (
-            'SELECT title, cat, dt, size FROM items '
-            f'WHERE title LIKE ?{cat_filter} LIMIT ? OFFSET ?'
+            "SELECT title, cat, dt, size, hash FROM items "
+            f"WHERE title LIKE ?{cat_filter} LIMIT ? OFFSET ?"
         )
         params_page = params + [per_page, offset]
         cursor.execute(query_str, params_page)
         results = cursor.fetchall()
-        # Return raw size in bytes, None if missing, and date as YYYY-MM-DD
-        results = [(title, cat, just_date(dt), size) for (title, cat, dt, size) in results]
-        # Use dicts for clarity and to name the date field
+        # Return raw size in bytes, None if missing, date as YYYY-MM-DD, and magnet link
         results = [
-            {'title': title, 'cat': cat, 'date': date, 'size': size}
-            for (title, cat, date, size) in results
+            (title, cat, just_date(dt), size, f"magnet:?xt=urn:btih:{hash_}&dn={title}")
+            for (title, cat, dt, size, hash_) in results
+        ]
+        # Use dicts for clarity and to name the fields
+        results = [
+            {'title': title, 'cat': cat, 'date': date, 'size': size, 'magnet': magnet}
+            for (title, cat, date, size, magnet) in results
         ]
         return {'result': results, 'total_count': total_count}
 
