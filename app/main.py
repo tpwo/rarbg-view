@@ -7,6 +7,7 @@ from sqlite3 import Connection
 from fastapi import FastAPI
 from fastapi import Query
 from fastapi import Request
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -53,6 +54,17 @@ def main_search(request: Request) -> object:
     return templates.TemplateResponse('search.html', {'request': request})
 
 
+@app.get('/search/')
+def search_root() -> RedirectResponse:
+    return RedirectResponse(url='/')
+
+
+@app.get('/search/{query}/')
+def search_query_redirect(query: str) -> RedirectResponse:
+    return RedirectResponse(url=f'/search/{query}/1/')
+
+
+# Serve the search results page
 @app.get('/search/{query}/{page}/')
 def search_page(request: Request, query: str, page: int) -> object:
     return templates.TemplateResponse(
