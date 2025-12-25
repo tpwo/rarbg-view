@@ -1,169 +1,181 @@
-
 // Unified script for search, pagination, and timestamp
-document.addEventListener('DOMContentLoaded', function() {
-    // Timestamp in footer
-    const ts = document.getElementById('timestamp');
-    if (ts) ts.innerHTML = Date().toLocaleString();
+document.addEventListener('DOMContentLoaded', function () {
+  // Timestamp in footer
+  const ts = document.getElementById('timestamp');
+  if (ts) ts.innerHTML = Date().toLocaleString();
 
-    // Search button and enter key
-    const searchBtn = document.getElementById('btn-search');
-    const searchBox = document.getElementById('search-box');
-    if (searchBtn) searchBtn.addEventListener('click', doSearch);
-    if (searchBox) {
-        searchBox.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                doSearch();
-            }
-        });
+  // Search button and enter key
+  const searchBtn = document.getElementById('btn-search');
+  const searchBox = document.getElementById('search-box');
+  if (searchBtn) searchBtn.addEventListener('click', doSearch);
+  if (searchBox) {
+    searchBox.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        doSearch();
+      }
+    });
+  }
+
+  // Extract query, page, and sort from URL
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  const query = decodeURIComponent(pathParts[1] || '');
+  const page = parseInt(pathParts[2] || '1', 10);
+  const resultsContainer = document.getElementById('results');
+  const paginationContainer = document.getElementById('pagination');
+  // Per-page dropdown state
+  const perPageOptions = [20, 40, 100];
+  const urlParams = new URLSearchParams(window.location.search);
+  let perPage = 20;
+  if (urlParams.get('per_page')) {
+    const val = parseInt(urlParams.get('per_page'), 10);
+    if (perPageOptions.includes(val)) perPage = val;
+  }
+  const sortCol = urlParams.get('sort_col') || 'title';
+  const sortDir = urlParams.get('sort_dir') || 'asc';
+
+  function getCategoryFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('category') || '';
+  }
+
+  function showSpinner() {
+    resultsContainer.innerHTML = '<div class="spinner"></div>';
+    resultsContainer.style.display = '';
+  }
+
+  function fetchResults() {
+    if (!query) return;
+    showSpinner();
+    const category = getCategoryFromUrl();
+    let url = `/results?search_query=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}`;
+    if (category) url += `&category=${encodeURIComponent(category)}`;
+    if (sortCol) url += `&sort_col=${encodeURIComponent(sortCol)}`;
+    if (sortDir) url += `&sort_dir=${encodeURIComponent(sortDir)}`;
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => {
+        renderResults(data.result || [], data.total_count || 0);
+        if ((data.result || []).length > 0) {
+          renderPagination(data.total_count || 0);
+        } else {
+          paginationContainer.style.display = 'none';
+        }
+      });
+  }
+
+  function humanReadableSize(size) {
+    if (typeof size !== 'number' || isNaN(size) || size === 0) return 'N/A';
+    if (size < 1000) return size + ' B';
+    const units = ['KB', 'MB', 'GB', 'TB'];
+    let unit = -1;
+    do {
+      size = size / 1000;
+      unit++;
+    } while (size >= 1000 && unit < units.length - 1);
+    return size.toFixed(2) + ' ' + units[unit];
+  }
+
+  function renderResults(results, totalCount) {
+    // Category icon SVGs (simple, recognizable)
+    const categoryIcons = {
+      Movies: '<i class="bi bi-film" title="Movies" style="font-size: 1.25em;"></i>',
+      TV: '<i class="bi bi-tv" title="TV" style="font-size: 1.25em;"></i>',
+      Games: '<i class="bi bi-controller" title="Games" style="font-size: 1.25em;"></i>',
+      Music: '<i class="bi bi-music-note-beamed" title="Music" style="font-size: 1.25em;"></i>',
+      Books: '<i class="bi bi-book" title="Books" style="font-size: 1.25em;"></i>',
+      Software: '<i class="bi bi-cpu" title="Software" style="font-size: 1.25em;"></i>',
+      Adult: '<i class="bi bi-person-video" title="Adult" style="font-size: 1.25em;"></i>',
+      Other: '<i class="bi bi-folder" title="Other" style="font-size: 1.25em;"></i>',
+    };
+
+    // Helper to get top-level category from r.cat
+    function getTopLevelCategory(cat) {
+      for (const [top, subs] of Object.entries({
+        Movies: new Set([
+          'movies',
+          'movies_bd_full',
+          'movies_bd_remux',
+          'movies_x264',
+          'movies_x264_3d',
+          'movies_x264_4k',
+          'movies_x264_720',
+          'movies_x265',
+          'movies_x265_4k',
+          'movies_x265_4k_hdr',
+          'movies_xvid',
+          'movies_xvid_720',
+        ]),
+        TV: new Set(['tv', 'tv_sd', 'tv_uhd']),
+        Games: new Set(['games_pc_iso', 'games_pc_rip', 'games_ps3', 'games_ps4', 'games_xbox360']),
+        Music: new Set(['music_flac', 'music_mp3']),
+        Books: new Set(['ebooks']),
+        Software: new Set(['software_pc_iso']),
+        Adult: new Set(['xxx']),
+      })) {
+        if (subs.has(cat)) return top;
+      }
+      return 'Other';
     }
-
-    // Extract query, page, and sort from URL
-    const pathParts = window.location.pathname.split('/').filter(Boolean);
-    const query = decodeURIComponent(pathParts[1] || '');
-    const page = parseInt(pathParts[2] || '1', 10);
-    const resultsContainer = document.getElementById('results');
-    const paginationContainer = document.getElementById('pagination');
-    // Per-page dropdown state
-    const perPageOptions = [20, 40, 100];
-    const urlParams = new URLSearchParams(window.location.search);
-    let perPage = 20;
-    if (urlParams.get('per_page')) {
-        const val = parseInt(urlParams.get('per_page'), 10);
-        if (perPageOptions.includes(val)) perPage = val;
-    }
-    const sortCol = urlParams.get('sort_col') || 'title';
-    const sortDir = urlParams.get('sort_dir') || 'asc';
-
-    function getCategoryFromUrl() {
-        const params = new URLSearchParams(window.location.search);
-        return params.get('category') || '';
-    }
-
-    function showSpinner() {
-        resultsContainer.innerHTML = '<div class="spinner"></div>';
-        resultsContainer.style.display = '';
-    }
-
-    function fetchResults() {
-        if (!query) return;
-        showSpinner();
-        const category = getCategoryFromUrl();
-        let url = `/results?search_query=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}`;
-        if (category) url += `&category=${encodeURIComponent(category)}`;
-        if (sortCol) url += `&sort_col=${encodeURIComponent(sortCol)}`;
-        if (sortDir) url += `&sort_dir=${encodeURIComponent(sortDir)}`;
-        fetch(url)
-            .then(res => res.json())
-            .then(data => {
-                renderResults(data.result || [], data.total_count || 0);
-                if ((data.result || []).length > 0) {
-                    renderPagination(data.total_count || 0);
-                } else {
-                    paginationContainer.style.display = 'none';
-                }
-            });
-    }
-
-    function humanReadableSize(size) {
-        if (typeof size !== 'number' || isNaN(size) || size === 0) return 'N/A';
-        if (size < 1000) return size + ' B';
-        const units = ['KB', 'MB', 'GB', 'TB'];
-        let unit = -1;
-        do {
-            size = size / 1000;
-            unit++;
-        } while (size >= 1000 && unit < units.length - 1);
-        return size.toFixed(2) + ' ' + units[unit];
-    }
-
-    function renderResults(results, totalCount) {
-                // Category icon SVGs (simple, recognizable)
-                const categoryIcons = {
-                      'Movies': '<i class="bi bi-film" title="Movies" style="font-size: 1.25em;"></i>',
-                      'TV': '<i class="bi bi-tv" title="TV" style="font-size: 1.25em;"></i>',
-                      'Games': '<i class="bi bi-controller" title="Games" style="font-size: 1.25em;"></i>',
-                      'Music': '<i class="bi bi-music-note-beamed" title="Music" style="font-size: 1.25em;"></i>',
-                      'Books': '<i class="bi bi-book" title="Books" style="font-size: 1.25em;"></i>',
-                      'Software': '<i class="bi bi-cpu" title="Software" style="font-size: 1.25em;"></i>',
-                      'Adult': '<i class="bi bi-person-video" title="Adult" style="font-size: 1.25em;"></i>',
-                      'Other': '<i class="bi bi-folder" title="Other" style="font-size: 1.25em;"></i>'
-                };
-
-                // Helper to get top-level category from r.cat
-                function getTopLevelCategory(cat) {
-                    for (const [top, subs] of Object.entries({
-                        'Movies': new Set(['movies','movies_bd_full','movies_bd_remux','movies_x264','movies_x264_3d','movies_x264_4k','movies_x264_720','movies_x265','movies_x265_4k','movies_x265_4k_hdr','movies_xvid','movies_xvid_720']),
-                        'TV': new Set(['tv','tv_sd','tv_uhd']),
-                        'Games': new Set(['games_pc_iso','games_pc_rip','games_ps3','games_ps4','games_xbox360']),
-                        'Music': new Set(['music_flac','music_mp3']),
-                        'Books': new Set(['ebooks']),
-                        'Software': new Set(['software_pc_iso']),
-                        'Adult': new Set(['xxx'])
-                    })) {
-                        if (subs.has(cat)) return top;
-                    }
-                    return 'Other';
-                }
-        resultsContainer.style.display = '';
-        // Per-page dropdown UI
-        // Calculate current range
-        let startIdx = totalCount === 0 ? 0 : ((page - 1) * perPage) + 1;
-        let endIdx = Math.min(page * perPage, totalCount);
-        let rangeText = totalCount === 0 ? '' : `${startIdx}-${endIdx}`;
-        let perPageHtml = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em; margin-top: 0.5em; padding-top: 0.5em;">
+    resultsContainer.style.display = '';
+    // Per-page dropdown UI
+    // Calculate current range
+    let startIdx = totalCount === 0 ? 0 : (page - 1) * perPage + 1;
+    let endIdx = Math.min(page * perPage, totalCount);
+    let rangeText = totalCount === 0 ? '' : `${startIdx}-${endIdx}`;
+    let perPageHtml = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em; margin-top: 0.5em; padding-top: 0.5em;">
             <div class="results-count" style="font-size: 1.08em; color: #444;">
                 ${rangeText ? `<span class='results-range'>Showing results ${rangeText}<br></span> ` : ''}${totalCount} total found
             </div>
             <div style="font-size: 1.08em; color: #444;">
                 <label for="per-page-select" style="margin-right: 0.4em;">Per page:</label>
                 <select id="per-page-select" style="font-size: 1em; padding: 0.1em 0.5em;">
-                    ${perPageOptions.map(opt => `<option value="${opt}"${opt === perPage ? ' selected' : ''}>${opt}</option>`).join('')}
+                    ${perPageOptions.map((opt) => `<option value="${opt}"${opt === perPage ? ' selected' : ''}>${opt}</option>`).join('')}
                 </select>
             </div>
         </div>`;
-        document.getElementById('per-page-container').innerHTML = perPageHtml;
-        document.getElementById('per-page-container').style.display = '';
-        setTimeout(() => {
-            const select = document.getElementById('per-page-select');
-            if (select) {
-                select.onchange = function() {
-                    const params = new URLSearchParams(window.location.search);
-                    params.set('per_page', select.value);
-                    // Always go to page 1 when per-page changes
-                    params.set('page', '1');
-                    // If using /search/{query}/{page}/ path, update location accordingly
-                    const pathParts = window.location.pathname.split('/').filter(Boolean);
-                    if (pathParts[0] === 'search' && pathParts.length >= 2) {
-                        let url = `/search/${decodeURIComponent(pathParts[1])}/1/`;
-                        const paramStr = params.toString();
-                        if (paramStr) url += `?${paramStr}`;
-                        window.location.href = url;
-                    } else {
-                        window.location.search = params.toString();
-                    }
-                };
-            }
-        }, 0);
-        if (results.length === 0) {
-            document.getElementById('per-page-container').innerHTML = '';
-            document.getElementById('per-page-container').style.display = 'none';
-            resultsContainer.innerHTML = '<p>No results found.</p>';
-            paginationContainer.style.display = 'none';
-            return;
-        }
-        paginationContainer.style.display = '';
-        // Sorting state
-        if (!window._rtSortState) {
-            window._rtSortState = { col: sortCol, dir: sortDir };
-        }
-        const sortState = window._rtSortState;
-        const sortIcons = {
-            asc: '▲',
-            desc: '▼',
-            none: ''
+    document.getElementById('per-page-container').innerHTML = perPageHtml;
+    document.getElementById('per-page-container').style.display = '';
+    setTimeout(() => {
+      const select = document.getElementById('per-page-select');
+      if (select) {
+        select.onchange = function () {
+          const params = new URLSearchParams(window.location.search);
+          params.set('per_page', select.value);
+          // Always go to page 1 when per-page changes
+          params.set('page', '1');
+          // If using /search/{query}/{page}/ path, update location accordingly
+          const pathParts = window.location.pathname.split('/').filter(Boolean);
+          if (pathParts[0] === 'search' && pathParts.length >= 2) {
+            let url = `/search/${decodeURIComponent(pathParts[1])}/1/`;
+            const paramStr = params.toString();
+            if (paramStr) url += `?${paramStr}`;
+            window.location.href = url;
+          } else {
+            window.location.search = params.toString();
+          }
         };
-        resultsContainer.innerHTML = `
+      }
+    }, 0);
+    if (results.length === 0) {
+      document.getElementById('per-page-container').innerHTML = '';
+      document.getElementById('per-page-container').style.display = 'none';
+      resultsContainer.innerHTML = '<p>No results found.</p>';
+      paginationContainer.style.display = 'none';
+      return;
+    }
+    paginationContainer.style.display = '';
+    // Sorting state
+    if (!window._rtSortState) {
+      window._rtSortState = { col: sortCol, dir: sortDir };
+    }
+    const sortState = window._rtSortState;
+    const sortIcons = {
+      asc: '▲',
+      desc: '▼',
+      none: '',
+    };
+    resultsContainer.innerHTML = `
             <table class="results-table compact-table">
                 <thead>
                     <tr>
@@ -174,7 +186,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${results.map(r => {
+                    ${results
+                      .map((r) => {
                         const topCat = getTopLevelCategory(r.cat);
                         const icon = categoryIcons[topCat] || categoryIcons['Other'];
                         return `
@@ -192,40 +205,41 @@ document.addEventListener('DOMContentLoaded', function() {
                             </td>
                         </tr>
                         `;
-                    }).join('')}
+                      })
+                      .join('')}
                 </tbody>
             </table>
         `;
-        // Add sorting event listeners
-        setTimeout(() => {
-            document.querySelectorAll('.results-table th.sortable').forEach(th => {
-                th.style.cursor = 'pointer';
-                th.onclick = () => {
-                    const col = th.getAttribute('data-col');
-                    if (sortState.col === col) {
-                        sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
-                    } else {
-                        sortState.col = col;
-                        sortState.dir = 'asc';
-                    }
-                    // Update URL path to page 1 and preserve sort/category params
-                    const params = new URLSearchParams(window.location.search);
-                    params.set('sort_col', sortState.col);
-                    params.set('sort_dir', sortState.dir);
-                    // Remove page param from query string (will be in path)
-                    params.delete('page');
-                    const category = params.get('category');
-                    let url = `/search/${encodeURIComponent(query)}/1/`;
-                    const paramStr = params.toString();
-                    if (paramStr) url += `?${paramStr}`;
-                    window.location.href = url;
-                };
-            });
-        }, 0);
-        if (!document.getElementById('magnet-icon-style')) {
-            const style = document.createElement('style');
-            style.id = 'magnet-icon-style';
-            style.textContent = `
+    // Add sorting event listeners
+    setTimeout(() => {
+      document.querySelectorAll('.results-table th.sortable').forEach((th) => {
+        th.style.cursor = 'pointer';
+        th.onclick = () => {
+          const col = th.getAttribute('data-col');
+          if (sortState.col === col) {
+            sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+          } else {
+            sortState.col = col;
+            sortState.dir = 'asc';
+          }
+          // Update URL path to page 1 and preserve sort/category params
+          const params = new URLSearchParams(window.location.search);
+          params.set('sort_col', sortState.col);
+          params.set('sort_dir', sortState.dir);
+          // Remove page param from query string (will be in path)
+          params.delete('page');
+          const category = params.get('category');
+          let url = `/search/${encodeURIComponent(query)}/1/`;
+          const paramStr = params.toString();
+          if (paramStr) url += `?${paramStr}`;
+          window.location.href = url;
+        };
+      });
+    }, 0);
+    if (!document.getElementById('magnet-icon-style')) {
+      const style = document.createElement('style');
+      style.id = 'magnet-icon-style';
+      style.textContent = `
                 .magnet-link { margin-left: 4px; vertical-align: middle; }
                 .magnet-icon { vertical-align: middle; color: #e74c3c; transition: color 0.2s; }
                 .magnet-link:hover .magnet-icon { color: #c0392b; }
@@ -239,130 +253,132 @@ document.addEventListener('DOMContentLoaded', function() {
                 .result-title { font-size: 1rem; font-weight: 500; }
                 .badge { display: inline-block; background: #2d7dd2; color: #fff; border-radius: 4px; padding: 0.1em 0.6em; font-size: 0.85em; margin-right: 0.5em; }
             `;
-            document.head.appendChild(style);
-        }
+      document.head.appendChild(style);
+    }
+  }
+
+  function escapeHtml(text) {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function renderPagination(totalCount) {
+    paginationContainer.style.display = '';
+    let totalPages = Math.ceil(totalCount / perPage);
+    if (totalPages === 0) totalPages = 1;
+    let html = '';
+    // Preserve sort params in pagination links
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('page')) params.delete('page');
+    params.set('sort_col', sortCol);
+    params.set('sort_dir', sortDir);
+    const paramStr = params.toString() ? `?${params.toString()}` : '';
+
+    // Helper to build page link
+    function pageLink(label, p, extraClass = '') {
+      if (p < 1 || p > totalPages) return '';
+      if (p === page) {
+        return `<span class="current-page${extraClass ? ' ' + extraClass : ''}">${p}</span>`;
+      }
+      return `<a href="/search/${encodeURIComponent(query)}/${p}/${paramStr}" class="${extraClass}">${label}</a>`;
     }
 
-    function escapeHtml(text) {
-        return text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+    // How many page numbers to show at once
+    const windowSize = 7;
+    let start = Math.max(1, page - Math.floor(windowSize / 2));
+    let end = start + windowSize - 1;
+    if (end > totalPages) {
+      end = totalPages;
+      start = Math.max(1, end - windowSize + 1);
     }
 
-    function renderPagination(totalCount) {
-        paginationContainer.style.display = '';
-        let totalPages = Math.ceil(totalCount / perPage);
-        if (totalPages === 0) totalPages = 1;
-        let html = '';
-        // Preserve sort params in pagination links
-        const params = new URLSearchParams(window.location.search);
-        if (params.has('page')) params.delete('page');
-        params.set('sort_col', sortCol);
-        params.set('sort_dir', sortDir);
-        const paramStr = params.toString() ? `?${params.toString()}` : '';
+    // First/<<
+    if (page > 1) {
+      html += pageLink('First', 1, 'first-page') + ' ';
+      html += pageLink('&lt;&lt;', page - 1, 'prev-page') + ' ';
+    }
 
-        // Helper to build page link
-        function pageLink(label, p, extraClass = '') {
-            if (p < 1 || p > totalPages) return '';
-            if (p === page) {
-                return `<span class="current-page${extraClass ? ' ' + extraClass : ''}">${p}</span>`;
-            }
-            return `<a href="/search/${encodeURIComponent(query)}/${p}/${paramStr}" class="${extraClass}">${label}</a>`;
-        }
+    // Page numbers
+    for (let i = start; i <= end; i++) {
+      html += pageLink(i, i) + ' ';
+    }
 
-        // How many page numbers to show at once
-        const windowSize = 7;
-        let start = Math.max(1, page - Math.floor(windowSize / 2));
-        let end = start + windowSize - 1;
-        if (end > totalPages) {
-            end = totalPages;
-            start = Math.max(1, end - windowSize + 1);
-        }
+    // >>/Last
+    if (page < totalPages) {
+      html += pageLink('&gt;&gt;', page + 1, 'next-page') + ' ';
+      html += pageLink('Last', totalPages, 'last-page');
+    }
 
-        // First/<<
-        if (page > 1) {
-            html += pageLink('First', 1, 'first-page') + ' ';
-            html += pageLink('&lt;&lt;', page - 1, 'prev-page') + ' ';
-        }
-
-        // Page numbers
-        for (let i = start; i <= end; i++) {
-            html += pageLink(i, i) + ' ';
-        }
-
-        // >>/Last
-        if (page < totalPages) {
-            html += pageLink('&gt;&gt;', page + 1, 'next-page') + ' ';
-            html += pageLink('Last', totalPages, 'last-page');
-        }
-
-        paginationContainer.innerHTML = `<div class="pagination-bar">${html.trim()}</div>`;
-        // Optional: add some minimal CSS for clarity
-        if (!document.getElementById('pagination-style')) {
-            const style = document.createElement('style');
-            style.id = 'pagination-style';
-            style.textContent = `
+    paginationContainer.innerHTML = `<div class="pagination-bar">${html.trim()}</div>`;
+    // Optional: add some minimal CSS for clarity
+    if (!document.getElementById('pagination-style')) {
+      const style = document.createElement('style');
+      style.id = 'pagination-style';
+      style.textContent = `
                 .pagination-bar { margin: 1em 0; font-size: 1.1em; text-align: center; }
                 .pagination-bar a { margin: 0 0.2em; text-decoration: none; color: #2d7dd2; font-weight: 500; }
                 .pagination-bar a:hover { text-decoration: underline; }
                 .pagination-bar .current-page { margin: 0 0.2em; font-weight: bold; color: #222; }
             `;
-            document.head.appendChild(style);
-        }
+      document.head.appendChild(style);
     }
+  }
 
-    setTimeout(function() {
-        if (searchBox) searchBox.value = query;
-        const category = getCategoryFromUrl();
-        const catSelect = document.getElementById('category-select');
-        if (catSelect && category) catSelect.value = category;
-    }, 0);
+  setTimeout(function () {
+    if (searchBox) searchBox.value = query;
+    const category = getCategoryFromUrl();
+    const catSelect = document.getElementById('category-select');
+    if (catSelect && category) catSelect.value = category;
+  }, 0);
 
-    setTimeout(function() {
-        const catSelect = document.getElementById('category-select');
-        if (catSelect) {
-            catSelect.addEventListener('change', function() {
-                const queryVal = searchBox ? searchBox.value : '';
-                if (!queryVal) return;
-                let url = `/search/${encodeURIComponent(queryVal)}/1/`;
-                if (catSelect.value) url += `?category=${encodeURIComponent(catSelect.value)}`;
-                window.location.href = url;
-            });
-        }
-    }, 0);
-
-    if (query) {
-        resultsContainer.style.display = '';
-        paginationContainer.style.display = '';
-        fetchResults();
-    }
-
-    // Intercept magnet link clicks to stay in the same tab
-    document.body.addEventListener('click', function(e) {
-        const target = e.target.closest('a.magnet-link');
-        if (target) {
-            e.preventDefault();
-            window.location.href = target.href;
-        }
-    });
-
-    function doSearch() {
-        var queryVal = searchBox ? searchBox.value : '';
-        if (queryVal.length < 3) {
-            resultsContainer.innerHTML = '<p>Please enter at least 3 characters to search.</p>';
-            resultsContainer.style.display = '';
-            paginationContainer.style.display = 'none';
-            if (searchBox) searchBox.focus();
-            return;
-        }
-        var category = document.getElementById('category-select') ? document.getElementById('category-select').value : '';
+  setTimeout(function () {
+    const catSelect = document.getElementById('category-select');
+    if (catSelect) {
+      catSelect.addEventListener('change', function () {
+        const queryVal = searchBox ? searchBox.value : '';
+        if (!queryVal) return;
         let url = `/search/${encodeURIComponent(queryVal)}/1/`;
-        if (category) {
-            url += `?category=${encodeURIComponent(category)}`;
-        }
+        if (catSelect.value) url += `?category=${encodeURIComponent(catSelect.value)}`;
         window.location.href = url;
+      });
     }
+  }, 0);
+
+  if (query) {
+    resultsContainer.style.display = '';
+    paginationContainer.style.display = '';
+    fetchResults();
+  }
+
+  // Intercept magnet link clicks to stay in the same tab
+  document.body.addEventListener('click', function (e) {
+    const target = e.target.closest('a.magnet-link');
+    if (target) {
+      e.preventDefault();
+      window.location.href = target.href;
+    }
+  });
+
+  function doSearch() {
+    var queryVal = searchBox ? searchBox.value : '';
+    if (queryVal.length < 3) {
+      resultsContainer.innerHTML = '<p>Please enter at least 3 characters to search.</p>';
+      resultsContainer.style.display = '';
+      paginationContainer.style.display = 'none';
+      if (searchBox) searchBox.focus();
+      return;
+    }
+    var category = document.getElementById('category-select')
+      ? document.getElementById('category-select').value
+      : '';
+    let url = `/search/${encodeURIComponent(queryVal)}/1/`;
+    if (category) {
+      url += `?category=${encodeURIComponent(category)}`;
+    }
+    window.location.href = url;
+  }
 });

@@ -9,6 +9,10 @@ repos:
   - id: ruff-check
     args: [--fix, --unsafe-fixes, --exit-non-zero-on-fix]
   - id: ruff-format
+- repo: https://github.com/biomejs/pre-commit
+  rev: v2.3.10
+  hooks:
+  - id: biome-format
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
   rev: v2.15.0
   hooks:
