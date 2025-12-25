@@ -101,9 +101,26 @@ def get_results(
         params_page = params + [per_page, offset]
         cursor.execute(query_str, params_page)
         results = cursor.fetchall()
-        # Return raw size in bytes, None if missing
-        results = [(title, cat, dt, size) for (title, cat, dt, size) in results]
+        # Return raw size in bytes, None if missing, and date as YYYY-MM-DD
+        results = [(title, cat, just_date(dt), size) for (title, cat, dt, size) in results]
+        # Use dicts for clarity and to name the date field
+        results = [
+            {'title': title, 'cat': cat, 'date': date, 'size': size}
+            for (title, cat, date, size) in results
+        ]
         return {'result': results, 'total_count': total_count}
+
+
+# Extract YYYY-MM-DD from ISO 8601 datetime string (e.g., '2023-12-25T14:23:00' -> '2023-12-25')
+def just_date(dt):
+    """Extract YYYY-MM-DD from an ISO 8601 datetime string.
+
+    This is done by trimming after the 10th character, as ISO 8601 date strings always have the date
+    in the first 10 characters (e.g., '2023-12-25T14:23:00' -> '2023-12-25').
+    """
+    if not dt:
+        return ''
+    return str(dt)[:10]
 
 
 def like_str(text: str) -> str:

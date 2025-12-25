@@ -89,14 +89,14 @@ document.addEventListener('DOMContentLoaded', function() {
             resultsContainer.innerHTML = '<p>No results found.</p>';
             return;
         }
-        // r[0]=title, r[1]=category, r[2]=date, r[3]=size (bytes)
+        // r is now an object: {title, cat, date, size}
         resultsContainer.innerHTML = '<ul class="results-list">' + results.map(r => `
             <li class="result-card">
-                <div class="result-title">${escapeHtml(r[0])}</div>
+                <div class="result-title">${escapeHtml(r.title)}</div>
                 <div class="result-meta">
-                    <span class="badge">${escapeHtml(r[1])}</span>
-                    <span>${escapeHtml(r[2])}</span>
-                    <span>${humanReadableSize(Number(r[3]))}</span>
+                    <span class="badge">${escapeHtml(r.cat)}</span>
+                    <span>${escapeHtml(r.date)}</span>
+                    <span>${humanReadableSize(Number(r.size))}</span>
                 </div>
             </li>
         `).join('') + '</ul>';
