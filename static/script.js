@@ -189,14 +189,55 @@ document.addEventListener('DOMContentLoaded', function() {
         params.set('sort_col', sortCol);
         params.set('sort_dir', sortDir);
         const paramStr = params.toString() ? `?${params.toString()}` : '';
+
+        // Helper to build page link
+        function pageLink(label, p, extraClass = '') {
+            if (p < 1 || p > totalPages) return '';
+            if (p === page) {
+                return `<span class="current-page${extraClass ? ' ' + extraClass : ''}">${p}</span>`;
+            }
+            return `<a href="/search/${encodeURIComponent(query)}/${p}/${paramStr}" class="${extraClass}">${label}</a>`;
+        }
+
+        // How many page numbers to show at once
+        const windowSize = 7;
+        let start = Math.max(1, page - Math.floor(windowSize / 2));
+        let end = start + windowSize - 1;
+        if (end > totalPages) {
+            end = totalPages;
+            start = Math.max(1, end - windowSize + 1);
+        }
+
+        // First/<<
         if (page > 1) {
-            html += `<a href="/search/${encodeURIComponent(query)}/${page-1}/${paramStr}">Previous</a> `;
+            html += pageLink('First', 1, 'first-page') + ' ';
+            html += pageLink('&lt;&lt;', page - 1, 'prev-page') + ' ';
         }
-        html += `Page ${page} of ${totalPages}`;
+
+        // Page numbers
+        for (let i = start; i <= end; i++) {
+            html += pageLink(i, i) + ' ';
+        }
+
+        // >>/Last
         if (page < totalPages) {
-            html += ` <a href="/search/${encodeURIComponent(query)}/${page+1}/${paramStr}">Next</a>`;
+            html += pageLink('&gt;&gt;', page + 1, 'next-page') + ' ';
+            html += pageLink('Last', totalPages, 'last-page');
         }
-        paginationContainer.innerHTML = html;
+
+        paginationContainer.innerHTML = `<div class="pagination-bar">${html.trim()}</div>`;
+        // Optional: add some minimal CSS for clarity
+        if (!document.getElementById('pagination-style')) {
+            const style = document.createElement('style');
+            style.id = 'pagination-style';
+            style.textContent = `
+                .pagination-bar { margin: 1em 0; font-size: 1.1em; text-align: center; }
+                .pagination-bar a { margin: 0 0.2em; text-decoration: none; color: #2d7dd2; font-weight: 500; }
+                .pagination-bar a:hover { text-decoration: underline; }
+                .pagination-bar .current-page { margin: 0 0.2em; font-weight: bold; color: #222; }
+            `;
+            document.head.appendChild(style);
+        }
     }
 
     setTimeout(function() {
