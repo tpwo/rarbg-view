@@ -65,15 +65,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function humanReadableSize(size) {
-    if (typeof size !== 'number' || isNaN(size) || size === 0) return 'N/A';
-    if (size < 1000) return size + ' B';
+    if (typeof size !== 'number' || Number.isNaN(size) || size === 0) return 'N/A';
+    if (size < 1000) return `${size} B`;
     const units = ['KB', 'MB', 'GB', 'TB'];
     let unit = -1;
     do {
       size = size / 1000;
       unit++;
     } while (size >= 1000 && unit < units.length - 1);
-    return size.toFixed(2) + ' ' + units[unit];
+    return `${size.toFixed(2)} ${units[unit]}`;
   }
 
   function renderResults(results, totalCount) {
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${results
                       .map((r) => {
                         const topCat = getTopLevelCategory(r.cat);
-                        const icon = categoryIcons[topCat] || categoryIcons['Other'];
+                        const icon = categoryIcons[topCat] || categoryIcons.Other;
                         return `
                         <tr class="result-card-row">
                             <td class="result-title" style="display: flex; align-items: center; gap: 0.5em;">
@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
           params.set('sort_dir', sortState.dir);
           // Remove page param from query string (will be in path)
           params.delete('page');
-          const category = params.get('category');
+          const _category = params.get('category');
           let url = `/search/${encodeURIComponent(query)}/1/`;
           const paramStr = params.toString();
           if (paramStr) url += `?${paramStr}`;
@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function pageLink(label, p, extraClass = '') {
       if (p < 1 || p > totalPages) return '';
       if (p === page) {
-        return `<span class="current-page${extraClass ? ' ' + extraClass : ''}">${p}</span>`;
+        return `<span class="current-page${extraClass ? ` ${extraClass}` : ''}">${p}</span>`;
       }
       return `<a href="/search/${encodeURIComponent(query)}/${p}/${paramStr}" class="${extraClass}">${label}</a>`;
     }
@@ -298,18 +298,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // First/<<
     if (page > 1) {
-      html += pageLink('First', 1, 'first-page') + ' ';
-      html += pageLink('&lt;&lt;', page - 1, 'prev-page') + ' ';
+      html += `${pageLink('First', 1, 'first-page')} `;
+      html += `${pageLink('&lt;&lt;', page - 1, 'prev-page')} `;
     }
 
     // Page numbers
     for (let i = start; i <= end; i++) {
-      html += pageLink(i, i) + ' ';
+      html += `${pageLink(i, i)} `;
     }
 
     // >>/Last
     if (page < totalPages) {
-      html += pageLink('&gt;&gt;', page + 1, 'next-page') + ' ';
+      html += `${pageLink('&gt;&gt;', page + 1, 'next-page')} `;
       html += pageLink('Last', totalPages, 'last-page');
     }
 
