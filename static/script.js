@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderResults(results, totalCount) {
         resultsContainer.style.display = '';
         // Per-page dropdown UI
-        let perPageHtml = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5em;">
+        let perPageHtml = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em; margin-top: 0.5em; padding-top: 0.5em;">
             <div class="results-count" style="font-size: 1.08em; color: #444;">${totalCount} result${totalCount === 1 ? '' : 's'} found</div>
             <div style="font-size: 1.08em; color: #444;">
                 <label for="per-page-select" style="margin-right: 0.4em;">Per page:</label>
