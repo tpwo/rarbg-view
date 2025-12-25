@@ -74,18 +74,45 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         paginationContainer.style.display = '';
+        // Sorting state
+        if (!window._rtSortState) {
+            window._rtSortState = { col: 'title', dir: 'asc' };
+        }
+        const sortState = window._rtSortState;
+        const sortIcons = {
+            asc: '▲',
+            desc: '▼',
+            none: ''
+        };
+        // Sort results
+        const sortedResults = [...results].sort((a, b) => {
+            let v1, v2;
+            switch (sortState.col) {
+                case 'title':
+                    v1 = a.title.toLowerCase(); v2 = b.title.toLowerCase(); break;
+                case 'date':
+                    v1 = a.date; v2 = b.date; break;
+                case 'size':
+                    v1 = a.size || 0; v2 = b.size || 0; break;
+                default:
+                    v1 = a.title.toLowerCase(); v2 = b.title.toLowerCase();
+            }
+            if (v1 < v2) return sortState.dir === 'asc' ? -1 : 1;
+            if (v1 > v2) return sortState.dir === 'asc' ? 1 : -1;
+            return 0;
+        });
         resultsContainer.innerHTML = `
             <table class="results-table compact-table">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Date</th>
-                        <th>Size</th>
+                        <th class="sortable" data-col="title">Name ${sortState.col === 'title' ? sortIcons[sortState.dir] : ''}</th>
+                        <th class="sortable" data-col="date">Date ${sortState.col === 'date' ? sortIcons[sortState.dir] : ''}</th>
+                        <th class="sortable" data-col="size">Size ${sortState.col === 'size' ? sortIcons[sortState.dir] : ''}</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${results.map(r => `
+                    ${sortedResults.map(r => `
                         <tr class="result-card-row">
                             <td class="result-title">
                                 <span class="badge">${escapeHtml(r.cat)}</span>
@@ -107,6 +134,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 </tbody>
             </table>
         `;
+        // Add sorting event listeners
+        setTimeout(() => {
+            document.querySelectorAll('.results-table th.sortable').forEach(th => {
+                th.style.cursor = 'pointer';
+                th.onclick = () => {
+                    const col = th.getAttribute('data-col');
+                    if (sortState.col === col) {
+                        sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        sortState.col = col;
+                        sortState.dir = 'asc';
+                    }
+                    renderResults(results);
+                };
+            });
+        }, 0);
         if (!document.getElementById('magnet-icon-style')) {
             const style = document.createElement('style');
             style.id = 'magnet-icon-style';
@@ -115,7 +158,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 .magnet-icon { vertical-align: middle; color: #e74c3c; transition: color 0.2s; }
                 .magnet-link:hover .magnet-icon { color: #c0392b; }
                 .results-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-                .results-table th, .results-table td { padding: 0.35rem 0.6rem; text-align: left; vertical-align: middle; }
+                .results-table th, .results-table td { padding: 0.35rem 0.6rem; text-align: left; vertical-align: middle; user-select: none; }
+                .results-table th.sortable { color: #2d7dd2; }
+                .results-table th.sortable:hover { text-decoration: underline; }
                 .results-table th { background: #f4faff; font-weight: 600; border-bottom: 1px solid #e0e0e0; }
                 .result-card-row { background: #fff; border-radius: 4px; transition: box-shadow 0.2s; }
                 .result-card-row:hover { box-shadow: 0 2px 8px 0 #e0e8f0; }
