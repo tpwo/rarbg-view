@@ -140,4 +140,5 @@ def just_date(dt: str) -> str:
 
 
 def like_str(text: str) -> str:
-    return '%' + text + '%'
+    # Replace spaces with % to match any characters (including .) between words
+    return '%' + text.replace(' ', '%') + '%'
