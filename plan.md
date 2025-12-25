@@ -1,38 +1,37 @@
-# Search Results Pagination and Subpage Plan
+
+# Plan: Rebuild HTML Flow with Jinja2 Templates and Shared Components
 
 ## Goal
-- Redirect users to `/search/{query}/{page}/` (e.g., `/search/abc/1/`) when searching.
-- Display 20 results per page, fetched via JSON API.
-- Populate the results page dynamically with JavaScript, not by showing raw JSON.
+Create a maintainable, DRY HTML flow using Jinja2 templates in FastAPI, with shared components (e.g., top bar, favicon, footer) injected into all pages. Avoid copy-pasting and enable easy UI changes across the app.
 
 ## Steps
 
-### 1. Frontend Changes
-- Update search button logic to redirect to `/search/{query}/1/`.
-- Create a new HTML page or template for `/search/{query}/{page}/`.
-- Add JavaScript to fetch results from `/results?search_query={query}&page={page}&per_page=20`.
-- Render results in the DOM.
-- Add pagination controls (Next/Previous) to navigate pages.
-- Add a search form to the results page, with the current search term prepopulated, so users can search again directly from the results page.
-- Add a category dropdown to the search form on the results page, using high-level group names (Movies, TV, Games, Music, Books, Software, Adult).
-- Update search logic to include the selected category in the request and preselect the current category if set.
+### 1. Project Structure
+- Create a `templates/` directory for Jinja2 HTML templates.
+- Move all HTML files (search, results, etc.) into `templates/`.
+- Create shared template components:
+	- `base.html`: Main layout with favicon, header/top bar (page name), and footer.
+	- `header.html`, `footer.html`: For easy inclusion in multiple pages.
 
-### 2. Backend Changes
-- Add a new route `/search/{query}/{page}/` to serve the results page (HTML).
-- Update `/results` API endpoint to accept `search_query`, `page`, and `per_page` parameters, and return paginated results as JSON.
-- In the database query, use `LIMIT` and `OFFSET` for pagination.
-- Update `/results` API endpoint to accept an optional `category` parameter (the high-level group name).
-- Map the high-level category to the relevant `cat` values in the database query and filter results accordingly.
+### 2. Template Inheritance & Includes
+- Use Jinja2 `{% extends 'base.html' %}` in all page templates.
+- Use `{% include 'header.html' %}` and `{% include 'footer.html' %}` for shared sections.
+- Place page-specific content in `{% block content %}{% endblock %}`.
 
-### 3. User Experience
-- When visiting `/search/abc/1/`, the page loads and fetches results for `abc` page 1.
-- Results are displayed dynamically.
-- Pagination controls allow moving between pages.
+### 3. FastAPI Integration
+- Install Jinja2 and use `Jinja2Templates` in FastAPI.
+- Update all routes to return `TemplateResponse` with the appropriate template and context.
+- Serve `/` and `/search/{query}/{page}/` using the same main template, with dynamic content based on context.
 
-### 4. Optional Enhancements
-- Show loading indicators while fetching data.
-- Display a message if no results are found.
-- Highlight the current page in pagination controls.
+### 4. JavaScript & Dynamic Content
+- Keep JS and CSS in `static/` and link in `base.html`.
+- Use JS to handle search, pagination, and results rendering as before.
+- Pass initial context (e.g., search term, category) from FastAPI to the template for pre-filling forms.
+
+### 5. User Experience
+- The user always sees a consistent UI, whether on the main page or search results.
+- All shared elements (header, favicon, footer) are managed in one place.
+- Future UI changes require editing only the shared templates.
 
 ---
 This plan will be updated as progress is made or requirements change.
