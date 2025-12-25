@@ -1,37 +1,70 @@
 
-# Plan: Rebuild HTML Flow with Jinja2 Templates and Shared Components
 
-## Goal
-Create a maintainable, DRY HTML flow using Jinja2 templates in FastAPI, with shared components (e.g., top bar, favicon, footer) injected into all pages. Avoid copy-pasting and enable easy UI changes across the app.
 
-## Steps
+# UI Improvement Plan for RareTide
 
-### 1. Project Structure
-- Create a `templates/` directory for Jinja2 HTML templates.
-- Move all HTML files (search, results, etc.) into `templates/`.
-- Create shared template components:
-	- `base.html`: Main layout with favicon, header/top bar (page name), and footer.
-	- `header.html`, `footer.html`: For easy inclusion in multiple pages.
+## Goals
 
-### 2. Template Inheritance & Includes
-- Use Jinja2 `{% extends 'base.html' %}` in all page templates.
-- Use `{% include 'header.html' %}` and `{% include 'footer.html' %}` for shared sections.
-- Place page-specific content in `{% block content %}{% endblock %}`.
+- Make the search form visually appealing and user-friendly
+- Present search results in a modern, readable, and responsive layout
+- Ensure consistent, attractive styling across all pages
+- Improve usability on both desktop and mobile
 
-### 3. FastAPI Integration
-- Install Jinja2 and use `Jinja2Templates` in FastAPI.
-- Update all routes to return `TemplateResponse` with the appropriate template and context.
-- Serve `/` and `/search/{query}/{page}/` using the same main template, with dynamic content based on context.
+## 1. Search Menu Improvements
 
-### 4. JavaScript & Dynamic Content
-- Keep JS and CSS in `static/` and link in `base.html`.
-- Use JS to handle search, pagination, and results rendering as before.
-- Pass initial context (e.g., search term, category) from FastAPI to the template for pre-filling forms.
+- Place the search form in a card or panel with padding and a subtle background
+- Use larger, rounded input fields and dropdowns
+- Add a search icon button (SVG or Unicode) for visual clarity
+- Align form elements horizontally on desktop, stack vertically on mobile
+- Add spacing between form elements
+- Use a modern, clean font (e.g., system-ui, Inter, Roboto)
 
-### 5. User Experience
-- The user always sees a consistent UI, whether on the main page or search results.
-- All shared elements (header, favicon, footer) are managed in one place.
-- Future UI changes require editing only the shared templates.
+## 2. Search Results Improvements
+
+- Display results in a card or list group with padding and hover effects
+- Show the title prominently, with category as a colored badge and date in muted text
+- Use alternating row backgrounds or dividers for readability
+- Add a loading spinner instead of plain text
+- Make the results area responsive and easy to scan
+
+## 3. General Styling
+
+- Use a soft, modern color palette (light backgrounds, accent colors for buttons/badges)
+- Add more whitespace and padding throughout
+- Make the site fully responsive (media queries for mobile)
+- Use CSS variables for easy theme adjustments
+- Add subtle transitions for interactive elements (buttons, hover states)
+
+## 4. Implementation Steps
+
+1. **Design**: Sketch or wireframe the new UI (optional, can use Figma or pen & paper)
+
+2. **CSS Refactor**:
+	- Create or update `static/styles.css` with new styles for form, results, and layout
+	- Use CSS variables for colors, spacing, and fonts
+	- Add responsive breakpoints
+
+3. **HTML Template Update**:
+	- Update `templates/search.html` to use semantic HTML and new class names
+	- Add structure for badges, cards, and spinner
+
+4. **JS Update**:
+	- Update `static/script.js` to render results with new HTML structure
+	- Add spinner logic for loading state
+
+5. **Testing**:
+	- Test on desktop and mobile browsers
+	- Adjust styles for accessibility (contrast, focus states)
+
+6. **Polish**:
+	- Refine spacing, colors, and transitions
+
+## 5. Optional Enhancements
+
+- Add dark mode toggle
+- Animate search results on load
+- Add icons for categories
+- Show result count and search summary
 
 ---
-This plan will be updated as progress is made or requirements change.
+This plan will guide a step-by-step UI overhaul for a modern, user-friendly RareTide experience.
