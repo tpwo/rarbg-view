@@ -3,22 +3,34 @@
 {% block title %}RareTide Search{% endblock %}
 
 {% block content %}
-<form id="search-form" onsubmit="return false;">
-    <input type="text" class="search-box" id="search-box" autofocus placeholder="Search for names...">
-    <select id="category-select">
-        <option value="">All Categories</option>
-        <option value="Movies">Movies</option>
-        <option value="TV">TV</option>
-        <option value="Games">Games</option>
-        <option value="Music">Music</option>
-        <option value="Books">Books</option>
-        <option value="Software">Software</option>
-        <option value="Adult">Adult</option>
-    </select>
-    <input type="button" id="btn-search" value="Search">
-</form>
-<div id="results" style="display:none;">Loading...</div>
-<div id="pagination" style="display:none;"></div>
+<div class="main-content">
+    <div class="search-card">
+        <form id="search-form" onsubmit="return false;">
+            <input type="text" class="search-box" id="search-box" autofocus placeholder="Search for names...">
+            <select id="category-select">
+                <option value="">All Categories</option>
+                <option value="Movies">Movies</option>
+                <option value="TV">TV</option>
+                <option value="Games">Games</option>
+                <option value="Music">Music</option>
+                <option value="Books">Books</option>
+                <option value="Software">Software</option>
+                <option value="Adult">Adult</option>
+            </select>
+            <button type="button" id="btn-search" class="search-btn">
+                <span style="display:inline-block;vertical-align:middle;">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
+                        <circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="2"/>
+                        <line x1="14.4142" y1="14" x2="18" y2="17.5858" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                Search
+            </button>
+        </form>
+    </div>
+    <div id="results" style="display:none;"></div>
+    <div id="pagination" style="display:none;"></div>
+</div>
 {% endblock %}
 
 {% block head %}
@@ -39,8 +51,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return params.get('category') || '';
     }
 
+
+    function showSpinner() {
+        resultsContainer.innerHTML = '<div class="spinner"></div>';
+        resultsContainer.style.display = '';
+    }
+
     function fetchResults() {
-        if (!query) return; // Only fetch if query is present
+        if (!query) return;
+        showSpinner();
         const category = getCategoryFromUrl();
         let url = `/results?search_query=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}`;
         if (category) url += `&category=${encodeURIComponent(category)}`;
@@ -58,7 +77,26 @@ document.addEventListener('DOMContentLoaded', function() {
             resultsContainer.innerHTML = '<p>No results found.</p>';
             return;
         }
-        resultsContainer.innerHTML = '<ul>' + results.map(r => `<li>${r[0]} (${r[1]}, ${r[2]})</li>`).join('') + '</ul>';
+        // r[0]=title, r[1]=category, r[2]=date
+        resultsContainer.innerHTML = '<ul class="results-list">' + results.map(r => `
+            <li class="result-card">
+                <div class="result-title">${escapeHtml(r[0])}</div>
+                <div class="result-meta">
+                    <span class="badge">${escapeHtml(r[1])}</span>
+                    <span>${escapeHtml(r[2])}</span>
+                </div>
+            </li>
+        `).join('') + '</ul>';
+    }
+
+    // Escape HTML utility
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
     function renderPagination(totalCount) {
