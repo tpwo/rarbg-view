@@ -18,13 +18,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Extract query and page from URL
+    // Extract query, page, and sort from URL
     const pathParts = window.location.pathname.split('/').filter(Boolean);
     const query = decodeURIComponent(pathParts[1] || '');
     const page = parseInt(pathParts[2] || '1', 10);
     const resultsContainer = document.getElementById('results');
     const paginationContainer = document.getElementById('pagination');
     const perPage = 20;
+    const urlParams = new URLSearchParams(window.location.search);
+    const sortCol = urlParams.get('sort_col') || 'title';
+    const sortDir = urlParams.get('sort_dir') || 'asc';
 
     function getCategoryFromUrl() {
         const params = new URLSearchParams(window.location.search);
@@ -42,6 +45,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const category = getCategoryFromUrl();
         let url = `/results?search_query=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}`;
         if (category) url += `&category=${encodeURIComponent(category)}`;
+        if (sortCol) url += `&sort_col=${encodeURIComponent(sortCol)}`;
+        if (sortDir) url += `&sort_dir=${encodeURIComponent(sortDir)}`;
         fetch(url)
             .then(res => res.json())
             .then(data => {
@@ -76,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
         paginationContainer.style.display = '';
         // Sorting state
         if (!window._rtSortState) {
-            window._rtSortState = { col: 'title', dir: 'asc' };
+            window._rtSortState = { col: sortCol, dir: sortDir };
         }
         const sortState = window._rtSortState;
         const sortIcons = {
@@ -84,23 +89,6 @@ document.addEventListener('DOMContentLoaded', function() {
             desc: '▼',
             none: ''
         };
-        // Sort results
-        const sortedResults = [...results].sort((a, b) => {
-            let v1, v2;
-            switch (sortState.col) {
-                case 'title':
-                    v1 = a.title.toLowerCase(); v2 = b.title.toLowerCase(); break;
-                case 'date':
-                    v1 = a.date; v2 = b.date; break;
-                case 'size':
-                    v1 = a.size || 0; v2 = b.size || 0; break;
-                default:
-                    v1 = a.title.toLowerCase(); v2 = b.title.toLowerCase();
-            }
-            if (v1 < v2) return sortState.dir === 'asc' ? -1 : 1;
-            if (v1 > v2) return sortState.dir === 'asc' ? 1 : -1;
-            return 0;
-        });
         resultsContainer.innerHTML = `
             <table class="results-table compact-table">
                 <thead>
@@ -112,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${sortedResults.map(r => `
+                    ${results.map(r => `
                         <tr class="result-card-row">
                             <td class="result-title">
                                 <span class="badge">${escapeHtml(r.cat)}</span>
@@ -146,7 +134,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         sortState.col = col;
                         sortState.dir = 'asc';
                     }
-                    renderResults(results);
+                    // Update URL path to page 1 and preserve sort/category params
+                    const params = new URLSearchParams(window.location.search);
+                    params.set('sort_col', sortState.col);
+                    params.set('sort_dir', sortState.dir);
+                    // Remove page param from query string (will be in path)
+                    params.delete('page');
+                    const category = params.get('category');
+                    let url = `/search/${encodeURIComponent(query)}/1/`;
+                    const paramStr = params.toString();
+                    if (paramStr) url += `?${paramStr}`;
+                    window.location.href = url;
                 };
             });
         }, 0);
@@ -185,12 +183,18 @@ document.addEventListener('DOMContentLoaded', function() {
         let totalPages = Math.ceil(totalCount / perPage);
         if (totalPages === 0) totalPages = 1;
         let html = '';
+        // Preserve sort params in pagination links
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('page')) params.delete('page');
+        params.set('sort_col', sortCol);
+        params.set('sort_dir', sortDir);
+        const paramStr = params.toString() ? `?${params.toString()}` : '';
         if (page > 1) {
-            html += `<a href="/search/${encodeURIComponent(query)}/${page-1}/">Previous</a> `;
+            html += `<a href="/search/${encodeURIComponent(query)}/${page-1}/${paramStr}">Previous</a> `;
         }
         html += `Page ${page} of ${totalPages}`;
         if (page < totalPages) {
-            html += ` <a href="/search/${encodeURIComponent(query)}/${page+1}/">Next</a>`;
+            html += ` <a href="/search/${encodeURIComponent(query)}/${page+1}/${paramStr}">Next</a>`;
         }
         paginationContainer.innerHTML = html;
     }

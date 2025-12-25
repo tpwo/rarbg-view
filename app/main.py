@@ -46,9 +46,6 @@ app.mount('/static', StaticFiles(directory='static', html=True), 'static')
 templates = Jinja2Templates(directory='templates')
 
 
-# Unified search page for both / and /search/{query}/{page}/
-
-
 @app.get('/')
 def main_search(request: Request) -> object:
     return templates.TemplateResponse('search.html', {'request': request})
@@ -64,12 +61,9 @@ def search_query_redirect(query: str) -> RedirectResponse:
     return RedirectResponse(url=f'/search/{query}/1/')
 
 
-# Serve the search results page
 @app.get('/search/{query}/{page}/')
-def search_page(request: Request, query: str, page: int) -> object:
-    return templates.TemplateResponse(
-        'search.html', {'request': request, 'query': query, 'page': page}
-    )
+def search_query_page(request: Request, query: str, page: int) -> object:
+    return templates.TemplateResponse('search.html', {'request': request})
 
 
 @app.get('/results')
@@ -78,9 +72,21 @@ def get_results(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     category: str | None = Query(None),
+    sort_col: str = Query('title'),
+    sort_dir: str = Query('asc'),
 ) -> object:
     offset = (page - 1) * per_page
     cats = CATEGORY_MAP.get(category) if category else None
+    # Validate sort_col and sort_dir
+    allowed_cols = {'title', 'date', 'size'}
+    allowed_dirs = {'asc', 'desc'}
+    col_map = {'title': 'title', 'date': 'dt', 'size': 'size'}
+    sort_col_sql = col_map.get(sort_col, 'title')
+    sort_dir_sql = 'ASC' if sort_dir.lower() == 'asc' else 'DESC'
+    if sort_col not in allowed_cols:
+        sort_col_sql = 'title'
+    if sort_dir.lower() not in allowed_dirs:
+        sort_dir_sql = 'ASC'
     with CONN as conn:
         cursor = conn.cursor()
         params = [like_str(search_query)]
@@ -93,10 +99,12 @@ def get_results(
         cursor.execute(count_query, params)
         total_count = cursor.fetchone()[0]
 
-        # Get paginated results (now including size and magnet link)
+        # Get paginated, sorted results
         query_str = (
-            'SELECT title, cat, dt, size, hash FROM items '
-            f'WHERE title LIKE ?{cat_filter} LIMIT ? OFFSET ?'
+            f'SELECT title, cat, dt, size, hash FROM items '
+            f'WHERE title LIKE ?{cat_filter} '
+            f'ORDER BY {sort_col_sql} {sort_dir_sql} '
+            f'LIMIT ? OFFSET ?'
         )
         params_page = params + [per_page, offset]
         cursor.execute(query_str, params_page)
@@ -114,7 +122,6 @@ def get_results(
         return {'result': results, 'total_count': total_count}
 
 
-# Extract YYYY-MM-DD from ISO 8601 datetime string (e.g., '2023-12-25T14:23:00' -> '2023-12-25')
 def just_date(dt: str) -> str:
     """Extract YYYY-MM-DD from an ISO 8601 datetime string.
 
