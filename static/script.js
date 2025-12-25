@@ -187,11 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <td>${humanReadableSize(Number(r.size))}</td>
                             <td>
                                 <a href="${r.magnet}" class="magnet-link" title="Download via Magnet">
-                                    <svg class="magnet-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                        <rect x="7" y="2" width="6" height="10" rx="3" stroke="currentColor" stroke-width="2"/>
-                                        <path d="M7 12v2a3 3 0 0 0 6 0v-2" stroke="currentColor" stroke-width="2"/>
-                                        <circle cx="10" cy="17" r="1" fill="currentColor"/>
-                                    </svg>
+                                    <i class="bi bi-link" style="font-size: 1.25em;"></i>
                                 </a>
                             </td>
                         </tr>
