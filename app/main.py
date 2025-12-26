@@ -138,31 +138,35 @@ def get_results(
     col_map = {'title': 'title', 'date': 'dt', 'size': 'size'}
     sort_col_sql = col_map.get(sort_col, 'title')
     sort_dir_sql = 'ASC' if sort_dir.lower() == 'asc' else 'DESC'
+
     if sort_col not in allowed_cols:
         sort_col_sql = 'title'
     if sort_dir.lower() not in allowed_dirs:
         sort_dir_sql = 'ASC'
+
     with CONN as conn:
         cursor = conn.cursor()
-        # Use FTS5 for search
-        params = [search_query]
-        cat_filter = ''
+
         if cats:
             cat_filter = f' AND i.cat IN ({",".join(["?"] * len(cats))})'
-            params.extend(cats)
-        # Get total count for pagination
-        if cats:
             count_query = f"""\
 SELECT COUNT(*) FROM items_fts
 JOIN items i ON i.rowid = items_fts.rowid
 WHERE items_fts MATCH ?{cat_filter}
 """
+            params = [search_query, *cats]
         else:
+            cat_filter = ''
             count_query = """\
 SELECT COUNT(*) FROM items_fts WHERE items_fts MATCH ?
 """
+            params = [search_query]
+
         cursor.execute(count_query, params)
         total_count = cursor.fetchone()[0]
+
+        if total_count == 0:
+            return {'result': [], 'total_count': 0}
 
         # Get paginated, sorted results
         query_str = f"""\
