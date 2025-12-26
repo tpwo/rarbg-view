@@ -66,26 +66,13 @@ logging.basicConfig(level=logging.INFO)
 
 
 def get_connection(db_file: str) -> Connection:
-    assert os.path.exists(db_file)
-    try:
+    if os.path.exists(db_file):
         # NOTE: `check_same_thread` is False, as DB is READ ONLY
-        conn = sqlite3.connect(db_file, check_same_thread=False)
-    except sqlite3.OperationalError:
-        return initialize_db(db_file)
+        return sqlite3.connect(db_file, check_same_thread=False)
     else:
-        return conn
-
-
-def initialize_db(db_file: str) -> Connection:
-    os.makedirs(DB_DIR, exist_ok=True)
-    open(db_file, 'w+').close()
-
-    # NOTE: `check_same_thread` is False, as DB is READ ONLY
-    conn = sqlite3.connect(db_file, check_same_thread=False)
-
-    with open('schema/schema.sql') as file:
-        conn.executescript(file.read())
-    return conn
+        raise SystemExit(
+            f'ERROR: database file `{db_file}` not found. Please provide it and rerun the app.'
+        )
 
 
 app = FastAPI()

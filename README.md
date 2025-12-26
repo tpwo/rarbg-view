@@ -17,4 +17,12 @@ App is dockerized with compose, and can be started with `just`:
 
     just up
 
+To run without docker:
+
+    just run
+
+To run with auto-reload mode enabled:
+
+    just listen
+
 To list all available recipes run `just --list`.

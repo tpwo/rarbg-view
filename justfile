@@ -6,6 +6,10 @@ help:
 run:
 	tox run -e run
 
+# start server in auto-reload mode
+listen:
+	tox run -e run -- --reload
+
 # start server in docker
 up:
 	docker compose up --build --remove-orphans
