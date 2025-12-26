@@ -17,35 +17,45 @@ from app.category_map import CATEGORY_MAP
 DB_DIR = 'db'
 DB_FILE = f'{DB_DIR}/database.db'
 
+QUERY_FTS5 = """\
+CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(
+    title,
+    content='items',
+    content_rowid='rowid'
+)
+"""
 
-# Ensure FTS5 table exists and is populated if empty
+# Check if FTS5 table is empty
+#
+# This is a bit stupid, but this table is non-empty after the query
+# above creates items_fts. But we still have to fill it with data.
+#
+# So we check for sample match `abc` which should return something.
+# DB state is quite static in this project, so this is good enough for now.
+QUERY_FTS5_CHECK = """\
+SELECT COUNT(*) FROM items_fts
+JOIN items i on i.rowid = items_fts.rowid
+WHERE items_fts MATCH "abc"
+"""
+
+QUERY_FTS5_INSERT = """\
+INSERT INTO items_fts(rowid, title)
+SELECT rowid, title FROM items
+"""
+
+
 def ensure_fts5_table() -> None:
+    """Ensures FTS5 table exists and is populated if empty."""
     with CONN as conn:
         cursor = conn.cursor()
         logging.info("Ensuring FTS5 table 'items_fts' exists...")
-        cursor.execute(
-            """CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(
-                title,
-                content='items',
-                content_rowid='rowid'
-            );"""
-        )
+        cursor.execute(QUERY_FTS5)
         logging.info("FTS5 table 'items_fts' checked/created.")
-        # Check if FTS5 table is empty
-        #
-        # This is a bit stupid, but this table is non-empty after the query
-        # above creates items_fts. But we still have to fill it with data.
-        #
-        # So we check for sample match `abc` which should return something.
-        #
-        # DB state is quite static in this project, so this is good enough for now.
-        cursor.execute(
-            'SELECT COUNT(*) FROM items_fts JOIN items i on i.rowid = items_fts.rowid WHERE items_fts MATCH "abc"'
-        )
+        cursor.execute(QUERY_FTS5_CHECK)
         count = cursor.fetchone()[0]
         if count == 0:
             logging.info("FTS5 table 'items_fts' is empty. Populating from 'items' table...")
-            cursor.execute('INSERT INTO items_fts(rowid, title) SELECT rowid, title FROM items')
+            cursor.execute(QUERY_FTS5_INSERT)
             logging.info("FTS5 table 'items_fts' population complete.")
         else:
             logging.info("FTS5 table 'items_fts' already populated.")
