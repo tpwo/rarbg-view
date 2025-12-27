@@ -342,16 +342,17 @@ button,
   align-items: center;
   text-decoration: none;
   color: inherit;
+  margin-left: 8px;
 }
+
 .logo {
   width: 40px;
   height: 40px;
+  margin-right: 8px;
   object-fit: contain;
   display: inline-block;
 }
-.site-brand .logo {
-  margin-right: 8px;
-}
+
 .site-title {
   margin: 0;
   font-size: 2.2rem;
