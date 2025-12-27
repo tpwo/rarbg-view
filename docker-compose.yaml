@@ -8,4 +8,4 @@ services:
     - 8000:8000
     volumes:
     - /etc/localtime:/etc/localtime:ro
-    - ./db:/app/db:ro
+    - ./db:/app/db

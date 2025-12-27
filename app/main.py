@@ -16,7 +16,7 @@ from fastapi.templating import Jinja2Templates
 from app.category_map import CATEGORY_MAP
 
 DB_DIR = 'db'
-DB_FILE = f'{DB_DIR}/database.db'
+DB_FILE = f'{DB_DIR}/rarbg_db.sqlite'
 
 QUERY_FTS5 = """\
 CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(
