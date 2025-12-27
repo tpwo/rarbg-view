@@ -1,4 +1,4 @@
-import { categoryIcons, sortIcons } from './consts.js';
+import { CATEGORY_ICNOS, SORT_ICONS } from './consts.js';
 import {
   escapeHtml,
   getCategoryFromUrl,
@@ -260,9 +260,9 @@ function _renderResults(
             <table class="results-table compact-table">
                 <thead>
                     <tr>
-                        <th class="sortable" data-col="title">Name ${sortState.col === 'title' ? sortIcons[sortState.dir] : ''}</th>
-                        <th class="sortable" data-col="date">Date ${sortState.col === 'date' ? sortIcons[sortState.dir] : ''}</th>
-                        <th class="sortable" data-col="size">Size ${sortState.col === 'size' ? sortIcons[sortState.dir] : ''}</th>
+                        <th class="sortable" data-col="title">Name ${sortState.col === 'title' ? SORT_ICONS[sortState.dir] : ''}</th>
+                        <th class="sortable" data-col="date">Date ${sortState.col === 'date' ? SORT_ICONS[sortState.dir] : ''}</th>
+                        <th class="sortable" data-col="size">Size ${sortState.col === 'size' ? SORT_ICONS[sortState.dir] : ''}</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -270,7 +270,7 @@ function _renderResults(
                     ${results
                       .map((r) => {
                         const topCat = getTopLevelCategory(r.cat);
-                        const icon = categoryIcons[topCat] || categoryIcons.Other;
+                        const icon = CATEGORY_ICNOS[topCat] || CATEGORY_ICNOS.Other;
                         return `
                         <tr class="result-card-row">
                           <td class="result-title">

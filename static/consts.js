@@ -1,4 +1,4 @@
-export const categorySets = {
+export const CATEGORY_SETS = {
   Movies: new Set([
     'movies',
     'movies_bd_full',
@@ -21,7 +21,7 @@ export const categorySets = {
   Adult: new Set(['xxx']),
 };
 
-export const categoryIcons = {
+export const CATEGORY_ICNOS = {
   Movies: '<i class="bi bi-film" title="Movies"></i>',
   TV: '<i class="bi bi-tv" title="TV"></i>',
   Games: '<i class="bi bi-controller" title="Games"></i>',
@@ -32,7 +32,7 @@ export const categoryIcons = {
   Other: '<i class="bi bi-folder" title="Other"></i>',
 };
 
-export const sortIcons = {
+export const SORT_ICONS = {
   asc: '▲',
   desc: '▼',
   none: '',

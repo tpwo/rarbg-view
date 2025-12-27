@@ -1,7 +1,7 @@
-import { categorySets } from './consts.js';
+import { CATEGORY_SETS } from './consts.js';
 
 export function getTopLevelCategory(cat) {
-  for (const [top, subs] of Object.entries(categorySets)) {
+  for (const [top, subs] of Object.entries(CATEGORY_SETS)) {
     if (subs.has(cat)) return top;
   }
   return 'Other';
