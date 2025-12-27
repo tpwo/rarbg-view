@@ -1,5 +1,5 @@
 services:
-  raretide:
+  rarbg-viewer:
     container_name: server
     build:
       dockerfile: Dockerfile

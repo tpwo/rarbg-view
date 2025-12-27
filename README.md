@@ -1,4 +1,4 @@
-# RareTide
+# RARBG Viewer
 
 Simple web viewer for SQLite databases with schema compatible with [RARBG](https://en.wikipedia.org/wiki/RARBG) dump.
 
