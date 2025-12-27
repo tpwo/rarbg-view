@@ -8,6 +8,7 @@ from sqlite3 import Connection
 from fastapi import FastAPI
 from fastapi import Query
 from fastapi import Request
+from fastapi.responses import FileResponse
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -85,6 +86,11 @@ templates = Jinja2Templates(directory='templates')
 @app.get('/')
 def main_search(request: Request) -> object:
     return templates.TemplateResponse('search.html', {'request': request})
+
+
+@app.get('/favicon.ico')
+async def favicon() -> FileResponse:
+    return FileResponse('static/logo.svg')
 
 
 @app.get('/search/')
