@@ -31,8 +31,8 @@ The dump was created by a person who originally shared it [here on reddit](https
 
 Note that you can run the app with any SQLite database compatible with this schema:
 
-```sqlite3
-$ sqlite3 rarbg_db.sqlite
+```sql
+$ sqlite3 rarbg_db.sqliten
 SQLite version 3.43.2 2023-10-10 13:08:14
 sqlite> .tables
 items
@@ -62,7 +62,7 @@ CREATE INDEX "ix__ext_id" ON "items" (
 
 Your DB should use the following categories for the app to work correctly:
 
-```
+```sql
 sqlite> SELECT DISTINCT cat FROM items;
 ebooks
 games_pc_iso
