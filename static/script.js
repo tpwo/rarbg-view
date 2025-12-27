@@ -1,4 +1,3 @@
-// Unified script for search, pagination, and timestamp
 document.addEventListener('DOMContentLoaded', () => {
   // Timestamp in footer
   const ts = document.getElementById('timestamp');
@@ -34,49 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const sortCol = urlParams.get('sort_col') || 'title';
   const sortDir = urlParams.get('sort_dir') || 'asc';
 
-  function getCategoryFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('category') || '';
-  }
-
-  function showSpinner() {
-    resultsContainer.innerHTML = '<div class="spinner"></div>';
-    resultsContainer.style.display = '';
-  }
-
-  function fetchResults() {
-    if (!query) return;
-    showSpinner();
-    const category = getCategoryFromUrl();
-    let url = `/results?search_query=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}`;
-    if (category) url += `&category=${encodeURIComponent(category)}`;
-    if (sortCol) url += `&sort_col=${encodeURIComponent(sortCol)}`;
-    if (sortDir) url += `&sort_dir=${encodeURIComponent(sortDir)}`;
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        renderResults(data.result || [], data.total_count || 0);
-        if ((data.result || []).length > 0) {
-          renderPagination(data.total_count || 0);
-        } else {
-          paginationContainer.style.display = 'none';
-        }
-      });
-  }
-
-  function humanReadableSize(size) {
-    if (typeof size !== 'number' || Number.isNaN(size) || size === 0) return 'N/A';
-    if (size < 1000) return `${size} B`;
-    const units = ['KB', 'MB', 'GB', 'TB'];
-    let unit = -1;
-    do {
-      size = size / 1000;
-      unit++;
-    } while (size >= 1000 && unit < units.length - 1);
-    return `${size.toFixed(2)} ${units[unit]}`;
-  }
-
-  function renderResults(results, totalCount) {
+  function _renderResults(results, totalCount) {
     // Category icon SVGs (simple, recognizable)
     const categoryIcons = {
       Movies: '<i class="bi bi-film" title="Movies" style="font-size: 1.25em;"></i>',
@@ -257,16 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function escapeHtml(text) {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
-
-  function renderPagination(totalCount) {
+  function _renderPagination(totalCount) {
     paginationContainer.style.display = '';
     let totalPages = Math.ceil(totalCount / perPage);
     if (totalPages === 0) totalPages = 1;
@@ -351,7 +299,28 @@ document.addEventListener('DOMContentLoaded', () => {
   if (query) {
     resultsContainer.style.display = '';
     paginationContainer.style.display = '';
-    fetchResults();
+
+    if (!query) return;
+
+    // Show spinner
+    resultsContainer.innerHTML = '<div class="spinner"></div>';
+    resultsContainer.style.display = '';
+
+    const category = getCategoryFromUrl();
+    let url = `/results?search_query=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}`;
+    if (category) url += `&category=${encodeURIComponent(category)}`;
+    if (sortCol) url += `&sort_col=${encodeURIComponent(sortCol)}`;
+    if (sortDir) url += `&sort_dir=${encodeURIComponent(sortDir)}`;
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => {
+        _renderResults(data.result || [], data.total_count || 0);
+        if ((data.result || []).length > 0) {
+          _renderPagination(data.total_count || 0);
+        } else {
+          paginationContainer.style.display = 'none';
+        }
+      });
   }
 
   // Intercept magnet link clicks to stay in the same tab
@@ -382,3 +351,29 @@ document.addEventListener('DOMContentLoaded', () => {
     window.location.href = url;
   }
 });
+
+function getCategoryFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('category') || '';
+}
+
+function humanReadableSize(size) {
+  if (typeof size !== 'number' || Number.isNaN(size) || size === 0) return 'N/A';
+  if (size < 1000) return `${size} B`;
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  let unit = -1;
+  do {
+    size = size / 1000;
+    unit++;
+  } while (size >= 1000 && unit < units.length - 1);
+  return `${size.toFixed(2)} ${units[unit]}`;
+}
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
