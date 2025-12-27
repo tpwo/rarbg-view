@@ -1,113 +1,182 @@
 import { CATEGORY_ICNOS, SORT_ICONS } from './consts.js';
-import {
-  escapeHtml,
-  getCategoryFromUrl,
-  getTopLevelCategory,
-  humanReadableSize,
-} from './helpers.js';
+import { escapeHtml, getTopLevelCategory, humanReadableSize } from './helpers.js';
 
+// Elements
 const SEARCH_BOX = document.getElementById('search-box');
+const RESULTS_CONTAINER = document.getElementById('results');
+const PAGINATION_CONTAINER = document.getElementById('pagination');
+const CATEGORY_SELECT = document.getElementById('category-select');
 
+// Config
+const PER_PAGE_OPTIONS = [20, 40, 100];
+
+// Utilities
+function show(el) {
+  if (!el) return;
+  try {
+    el.classList.remove('hidden');
+  } catch (_e) {}
+  try {
+    el.style.display = '';
+  } catch (_e) {}
+}
+
+function hide(el) {
+  if (!el) return;
+  try {
+    el.classList.add('hidden');
+  } catch (_e) {}
+  try {
+    el.style.display = 'none';
+  } catch (_e) {}
+}
+
+function readStateFromUrl() {
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  const q = decodeURIComponent(parts[1] || '');
+  const p = parseInt(parts[2] || '1', 10) || 1;
+  const params = new URLSearchParams(window.location.search);
+  return {
+    query: q,
+    page: p,
+    perPage: parseInt(params.get('per_page') || String(PER_PAGE_OPTIONS[0]), 10),
+    sortCol: params.get('sort_col') || 'title',
+    sortDir: params.get('sort_dir') || 'asc',
+    category: params.get('category') || '',
+  };
+}
+
+function buildPathForState(state) {
+  if (!state || !state.query) return '/';
+  const params = new URLSearchParams();
+  if (state.perPage) params.set('per_page', String(state.perPage));
+  if (state.sortCol) params.set('sort_col', state.sortCol);
+  if (state.sortDir) params.set('sort_dir', state.sortDir);
+  if (state.category) params.set('category', state.category);
+  const paramStr = params.toString();
+  return `/search/${encodeURIComponent(state.query)}/${state.page || 1}/${paramStr ? `?${paramStr}` : ''}`;
+}
+
+function buildResultsApiUrl(state) {
+  const params = new URLSearchParams();
+  params.set('search_query', state.query || '');
+  params.set('page', String(state.page || 1));
+  params.set('per_page', String(state.perPage || 20));
+  if (state.category) params.set('category', state.category);
+  if (state.sortCol) params.set('sort_col', state.sortCol);
+  if (state.sortDir) params.set('sort_dir', state.sortDir);
+  return `/results?${params.toString()}`;
+}
+
+function fetchAndRender(state, opts = { push: false, replace: false }) {
+  if (!state || !state.query) return;
+  const path = buildPathForState(state);
+  try {
+    if (opts.replace) window.history.replaceState({}, '', path);
+    else if (opts.push) window.history.pushState({}, '', path);
+  } catch (_e) {}
+  if (RESULTS_CONTAINER) RESULTS_CONTAINER.innerHTML = '<div class="spinner"></div>';
+  if (RESULTS_CONTAINER) show(RESULTS_CONTAINER);
+  if (PAGINATION_CONTAINER) show(PAGINATION_CONTAINER);
+  const apiUrl = buildResultsApiUrl(state);
+  fetch(apiUrl)
+    .then((res) => res.json())
+    .then((data) => {
+      _renderResults(
+        data.result || [],
+        data.total_count || 0,
+        RESULTS_CONTAINER,
+        state.page || 1,
+        state.perPage || 20,
+        PER_PAGE_OPTIONS,
+        PAGINATION_CONTAINER,
+        state.sortCol || 'title',
+        state.sortDir || 'asc',
+      );
+      if ((data.result || []).length > 0) {
+        _renderPagination(
+          data.total_count || 0,
+          PAGINATION_CONTAINER,
+          state.perPage || 20,
+          state.sortCol || 'title',
+          state.sortDir || 'asc',
+          state.page || 1,
+          state.query || '',
+        );
+      } else {
+        if (PAGINATION_CONTAINER) hide(PAGINATION_CONTAINER);
+      }
+
+      // pagination links -> SPA
+      if (PAGINATION_CONTAINER) {
+        PAGINATION_CONTAINER.querySelectorAll('a').forEach((a) => {
+          a.onclick = (ev) => {
+            ev.preventDefault();
+            const href = a.getAttribute('href') || '';
+            const parts = href.split('/').filter(Boolean);
+            const newPage = parseInt(parts[2] || '1', 10) || 1;
+            const newState = Object.assign({}, state, { page: newPage });
+            fetchAndRender(newState, { push: true });
+          };
+        });
+      }
+    })
+    .catch((err) => {
+      console.error('Failed to fetch results', err);
+      if (RESULTS_CONTAINER) RESULTS_CONTAINER.innerHTML = '<p>Error loading results.</p>';
+    });
+}
+
+// Wire initial page load and UI events
 document.addEventListener('DOMContentLoaded', () => {
-  // Timestamp in footer
   const ts = document.getElementById('timestamp');
-  if (ts) ts.innerHTML = Date().toLocaleString();
+  if (ts) ts.innerHTML = new Date().toLocaleString();
+  const initialState = readStateFromUrl();
+  if (initialState.query) fetchAndRender(initialState, { replace: true });
 
-  document
-    .getElementById('btn-search')
-    .addEventListener('click', () => doSearch(resultsContainer, paginationContainer));
-  SEARCH_BOX.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      doSearch(resultsContainer, paginationContainer);
+  // Search form -> SPA search
+  document.getElementById('btn-search').addEventListener('click', () => {
+    const q = SEARCH_BOX ? SEARCH_BOX.value : '';
+    const category = CATEGORY_SELECT ? CATEGORY_SELECT.value : '';
+    const state = {
+      query: q,
+      page: 1,
+      perPage: PER_PAGE_OPTIONS[0],
+      sortCol: 'title',
+      sortDir: 'asc',
+      category,
+    };
+    fetchAndRender(state, { push: true });
+  });
+  SEARCH_BOX.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      document.getElementById('btn-search').click();
     }
   });
 
-  // Extract query, page, and sort from URL
-  const pathParts = window.location.pathname.split('/').filter(Boolean);
-  const query = decodeURIComponent(pathParts[1] || '');
-  const page = parseInt(pathParts[2] || '1', 10);
-  const resultsContainer = document.getElementById('results');
-  const paginationContainer = document.getElementById('pagination');
-  // Per-page dropdown state
-  const perPageOptions = [20, 40, 100];
-  const urlParams = new URLSearchParams(window.location.search);
-  let perPage = 20;
-  if (urlParams.get('per_page')) {
-    const val = parseInt(urlParams.get('per_page'), 10);
-    if (perPageOptions.includes(val)) perPage = val;
+  // Category select
+  if (CATEGORY_SELECT) {
+    CATEGORY_SELECT.addEventListener('change', () => {
+      const q = SEARCH_BOX ? SEARCH_BOX.value : '';
+      if (!q) return; // nothing to search
+      const state = readStateFromUrl();
+      state.query = q;
+      state.page = 1;
+      state.category = CATEGORY_SELECT.value || '';
+      fetchAndRender(state, { push: true });
+    });
   }
-  const sortCol = urlParams.get('sort_col') || 'title';
-  const sortDir = urlParams.get('sort_dir') || 'asc';
 
-  setTimeout(() => {
-    SEARCH_BOX.value = query;
-    const category = getCategoryFromUrl();
-    const catSelect = document.getElementById('category-select');
-    if (catSelect && category) catSelect.value = category;
-  }, 0);
-
-  setTimeout(() => {
-    const catSelect = document.getElementById('category-select');
-    if (catSelect) {
-      catSelect.addEventListener('change', () => {
-        const queryVal = SEARCH_BOX ? SEARCH_BOX.value : '';
-        if (!queryVal) return;
-        let url = `/search/${encodeURIComponent(queryVal)}/1/`;
-        if (catSelect.value) url += `?category=${encodeURIComponent(catSelect.value)}`;
-        window.location.href = url;
-      });
-    }
-  }, 0);
-
-  if (query) {
-    if (resultsContainer) resultsContainer.classList.remove('hidden');
-    if (paginationContainer) paginationContainer.classList.remove('hidden');
-
-    if (!query) return;
-
-    // Show spinner
-    resultsContainer.innerHTML = '<div class="spinner"></div>';
-    if (resultsContainer) resultsContainer.classList.remove('hidden');
-
-    const category = getCategoryFromUrl();
-    let url = `/results?search_query=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}`;
-    if (category) url += `&category=${encodeURIComponent(category)}`;
-    if (sortCol) url += `&sort_col=${encodeURIComponent(sortCol)}`;
-    if (sortDir) url += `&sort_dir=${encodeURIComponent(sortDir)}`;
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        _renderResults(
-          data.result || [],
-          data.total_count || 0,
-          resultsContainer,
-          page,
-          perPage,
-          perPageOptions,
-          paginationContainer,
-          sortCol,
-          sortDir,
-        );
-        if ((data.result || []).length > 0) {
-          _renderPagination(
-            data.total_count || 0,
-            paginationContainer,
-            perPage,
-            sortCol,
-            sortDir,
-            page,
-            query,
-          );
-        } else {
-          if (paginationContainer) paginationContainer.classList.add('hidden');
-        }
-      });
-  }
+  // Handle popstate to support back/forward navigation
+  window.addEventListener('popstate', () => {
+    const s = readStateFromUrl();
+    if (s.query) fetchAndRender(s, { replace: true });
+  });
 
   // Intercept magnet link clicks to stay in the same tab
   document.body.addEventListener('click', (e) => {
-    const target = e.target.closest('a.magnet-link');
+    const target = e.target.closest?.('a.magnet-link');
     if (target) {
       e.preventDefault();
       window.location.href = target.href;
@@ -171,25 +240,6 @@ function _renderPagination(
   }
 
   paginationContainer.innerHTML = `<div class="pagination-bar">${html.trim()}</div>`;
-}
-
-function doSearch(resultsContainer, paginationContainer) {
-  var queryVal = SEARCH_BOX ? SEARCH_BOX.value : '';
-  if (queryVal.length < 3) {
-    resultsContainer.innerHTML = '<p>Please enter at least 3 characters to search.</p>';
-    if (resultsContainer) resultsContainer.classList.remove('hidden');
-    if (paginationContainer) paginationContainer.classList.add('hidden');
-    SEARCH_BOX.focus();
-    return;
-  }
-  var category = document.getElementById('category-select')
-    ? document.getElementById('category-select').value
-    : '';
-  let url = `/search/${encodeURIComponent(queryVal)}/1/`;
-  if (category) {
-    url += `?category=${encodeURIComponent(category)}`;
-  }
-  window.location.href = url;
 }
 
 function _renderResults(
@@ -302,16 +352,12 @@ function _renderResults(
           sortState.col = col;
           sortState.dir = 'asc';
         }
-        // Update URL path to page 1 and preserve sort/category params
-        const params = new URLSearchParams(window.location.search);
-        params.set('sort_col', sortState.col);
-        params.set('sort_dir', sortState.dir);
-        // Remove page param from query string (will be in path)
-        params.delete('page');
-        let url = `/search/${encodeURIComponent(query)}/1/`;
-        const paramStr = params.toString();
-        if (paramStr) url += `?${paramStr}`;
-        window.location.href = url;
+        // Use SPA fetch: update state and fetch page 1 with new sort
+        const s = readStateFromUrl();
+        s.page = 1;
+        s.sortCol = sortState.col;
+        s.sortDir = sortState.dir;
+        fetchAndRender(s, { push: true });
       };
     });
   }, 0);

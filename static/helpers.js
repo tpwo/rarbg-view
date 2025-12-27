@@ -7,11 +7,6 @@ export function getTopLevelCategory(cat) {
   return 'Other';
 }
 
-export function getCategoryFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get('category') || '';
-}
-
 export function humanReadableSize(size) {
   if (typeof size !== 'number' || Number.isNaN(size) || size === 0) return 'N/A';
   if (size < 1000) return `${size} B`;
