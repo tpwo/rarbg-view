@@ -6,26 +6,22 @@ import {
   humanReadableSize,
 } from './helpers.js';
 
+const SEARCH_BOX = document.getElementById('search-box');
+
 document.addEventListener('DOMContentLoaded', () => {
   // Timestamp in footer
   const ts = document.getElementById('timestamp');
   if (ts) ts.innerHTML = Date().toLocaleString();
 
-  // Search button and enter key
-  const searchBtn = document.getElementById('btn-search');
-  const searchBox = document.getElementById('search-box');
-  if (searchBtn)
-    searchBtn.addEventListener('click', () =>
-      doSearch(searchBox, resultsContainer, paginationContainer),
-    );
-  if (searchBox) {
-    searchBox.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        doSearch(searchBox, resultsContainer, paginationContainer);
-      }
-    });
-  }
+  document
+    .getElementById('btn-search')
+    .addEventListener('click', () => doSearch(resultsContainer, paginationContainer));
+  SEARCH_BOX.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      doSearch(resultsContainer, paginationContainer);
+    }
+  });
 
   // Extract query, page, and sort from URL
   const pathParts = window.location.pathname.split('/').filter(Boolean);
@@ -45,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const sortDir = urlParams.get('sort_dir') || 'asc';
 
   setTimeout(() => {
-    if (searchBox) searchBox.value = query;
+    SEARCH_BOX.value = query;
     const category = getCategoryFromUrl();
     const catSelect = document.getElementById('category-select');
     if (catSelect && category) catSelect.value = category;
@@ -55,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const catSelect = document.getElementById('category-select');
     if (catSelect) {
       catSelect.addEventListener('change', () => {
-        const queryVal = searchBox ? searchBox.value : '';
+        const queryVal = SEARCH_BOX ? SEARCH_BOX.value : '';
         if (!queryVal) return;
         let url = `/search/${encodeURIComponent(queryVal)}/1/`;
         if (catSelect.value) url += `?category=${encodeURIComponent(catSelect.value)}`;
@@ -177,13 +173,13 @@ function _renderPagination(
   paginationContainer.innerHTML = `<div class="pagination-bar">${html.trim()}</div>`;
 }
 
-function doSearch(searchBox, resultsContainer, paginationContainer) {
-  var queryVal = searchBox ? searchBox.value : '';
+function doSearch(resultsContainer, paginationContainer) {
+  var queryVal = SEARCH_BOX ? SEARCH_BOX.value : '';
   if (queryVal.length < 3) {
     resultsContainer.innerHTML = '<p>Please enter at least 3 characters to search.</p>';
     if (resultsContainer) resultsContainer.classList.remove('hidden');
     if (paginationContainer) paginationContainer.classList.add('hidden');
-    if (searchBox) searchBox.focus();
+    SEARCH_BOX.focus();
     return;
   }
   var category = document.getElementById('category-select')
