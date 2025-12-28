@@ -1,9 +1,6 @@
 import { CATEGORY_ICNOS, SORT_ICONS } from './consts.js';
 import { escapeHtml, getTopLevelCategory, humanReadableSize } from './helpers.js';
 
-// Elements
-const CATEGORY_SELECT = document.getElementById('category-select');
-
 // Config
 const PER_PAGE_OPTIONS = [20, 40, 100];
 
@@ -134,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Search form -> SPA search
   document.getElementById('btn-search').addEventListener('click', () => {
     const q = searchbox ? searchbox.value : '';
-    const category = CATEGORY_SELECT ? CATEGORY_SELECT.value : '';
+    const category = categories ? categories.value : '';
     const state = {
       query: q,
       page: 1,
@@ -153,14 +150,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Category select
-  if (CATEGORY_SELECT) {
-    CATEGORY_SELECT.addEventListener('change', () => {
+  if (categories) {
+    categories.addEventListener('change', () => {
       const q = searchbox ? searchbox.value : '';
       if (!q) return; // nothing to search
       const state = readStateFromUrl();
       state.query = q;
       state.page = 1;
-      state.category = CATEGORY_SELECT.value || '';
+      state.category = categories.value || '';
       fetchAndRender(state, { push: true });
     });
   }
