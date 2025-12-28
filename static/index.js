@@ -48,13 +48,12 @@ const _STATE = new State();
 hide(perPageSelect);
 
 document.addEventListener('DOMContentLoaded', () => {
-  const initialState = readStateFromUrl();
-  if (initialState.query) fetchAndRender(initialState, { replace: true });
+  if (_STATE.query) fetchAndRender(_STATE);
 
   btnSearch.addEventListener('click', () => {
     _STATE.query = searchbox.value;
     _STATE.category = categories.value;
-    fetchAndRender(_STATE, { push: true });
+    fetchAndRender(_STATE);
   });
 
   searchbox.addEventListener('keydown', (ev) => {
@@ -73,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
   categories.addEventListener('change', () => {
     _STATE.category = categories.value;
     _STATE.page = 1;
-    fetchAndRender(_STATE, { push: true });
+    fetchAndRender(_STATE);
   });
 
   document.addEventListener('click', (ev) => {
@@ -87,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         _STATE.sortDir = 'asc';
       }
       _STATE.page = 1;
-      fetchAndRender(_STATE, { push: true });
+      fetchAndRender(_STATE);
     }
   });
 
@@ -112,21 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-function readStateFromUrl() {
-  const parts = window.location.pathname.split('/').filter(Boolean);
-  const q = decodeURIComponent(parts[1] || '');
-  const p = parseInt(parts[2] || '1', 10) || 1;
-  const params = new URLSearchParams(window.location.search);
-  return {
-    query: q,
-    page: p,
-    perPage: parseInt(params.get('per_page') || String(PER_PAGE_OPTIONS[0]), 10),
-    sortCol: params.get('sort_col') || 'title',
-    sortDir: params.get('sort_dir') || 'asc',
-    category: params.get('category') || '',
-  };
-}
-
 function buildResultsApiUrl(state) {
   const params = new URLSearchParams();
   params.set('search_query', state.query);
@@ -138,7 +122,7 @@ function buildResultsApiUrl(state) {
   return `/results?${params.toString()}`;
 }
 
-function fetchAndRender(state, opts = { push: false, replace: false }) {
+function fetchAndRender(state) {
   if (!state.query) return;
 
   const params = new URLSearchParams();
@@ -146,12 +130,7 @@ function fetchAndRender(state, opts = { push: false, replace: false }) {
   if (state.sortCol) params.set('sort_col', state.sortCol);
   if (state.sortDir) params.set('sort_dir', state.sortDir);
   if (state.category) params.set('category', state.category);
-  const path = `/search/${encodeURIComponent(state.query)}/${state.page}/${params.toString()}`;
-
-  try {
-    if (opts.replace) window.history.replaceState({}, '', path);
-    else if (opts.push) window.history.pushState({}, '', path);
-  } catch (_e) {}
+  const _path = `/search/${encodeURIComponent(state.query)}/${state.page}/${params.toString()}`;
 
   if (results) {
     results.innerHTML = '<div class="spinner"></div>';
@@ -225,13 +204,6 @@ function fetchAndRender(state, opts = { push: false, replace: false }) {
       pagination.style.display = '';
       state.totalPages = Math.ceil(data.total_count / state.perPage);
       if (state.totalPages === 0) state.totalPages = 1;
-
-      // Preserve sort params in pagination links
-      const params = new URLSearchParams(window.location.search);
-      if (params.has('page')) params.delete('page');
-      params.set('sort_col', state.sortCol);
-      params.set('sort_dir', state.sortDir);
-      const _paramStr = params.toString() ? `?${params.toString()}` : '';
 
       // Helper to build page link
       function pageLink(label, p, extraClass = '') {
