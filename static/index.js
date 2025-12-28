@@ -253,6 +253,8 @@ function _renderResults(
   sortCol,
   sortDir,
 ) {
+  _checkMinQueryLength();
+  show(RESULTS_CONTAINER);
   if (resultsContainer) resultsContainer.classList.remove('hidden');
   // Per-page dropdown UI
   // Calculate current range
@@ -361,4 +363,12 @@ function _renderResults(
       };
     });
   }, 0);
+}
+
+function _checkMinQueryLength() {
+  if (SEARCH_BOX.value.length < 3) {
+    RESULTS_CONTAINER.innerHTML = '<p>Please enter at least 3 characters to search.</p>';
+    if (PAGINATION_CONTAINER) hide(PAGINATION_CONTAINER);
+    return;
+  }
 }
