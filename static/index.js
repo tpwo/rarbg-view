@@ -31,6 +31,7 @@ class State {
     sortCol = Columns.TITLE,
     sortDir = SortDir.ASC,
     category = Category.ALL,
+    totalPages = 1,
   ) {
     this.query = query;
     this.page = page;
@@ -38,6 +39,7 @@ class State {
     this.sortCol = sortCol;
     this.sortDir = sortDir;
     this.category = category;
+    this.totalPages = totalPages;
   }
 }
 
@@ -95,10 +97,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Handle popstate to support back/forward navigation
-  window.addEventListener('popstate', () => {
-    const s = readStateFromUrl();
-    if (s.query) fetchAndRender(s, { replace: true });
+  pagination.addEventListener('click', (ev) => {
+    const clicked = ev.target.text;
+    if (clicked == null) return;
+    else if (clicked === '>>') ++_STATE.page;
+    else if (clicked === '<<') --_STATE.page;
+    else if (clicked === 'First') _STATE.page = 1;
+    else if (clicked === 'Last') _STATE.page = _STATE.totalPages;
+    else _STATE.page = Number(clicked);
+    fetchAndRender(_STATE);
   });
 
   // Intercept magnet link clicks to stay in the same tab
@@ -222,34 +229,35 @@ function fetchAndRender(state, opts = { push: false, replace: false }) {
         `;
 
       pagination.style.display = '';
-      let totalPages = Math.ceil(data.total_count / state.perPage);
-      if (totalPages === 0) totalPages = 1;
-      let html = '';
+      state.totalPages = Math.ceil(data.total_count / state.perPage);
+      if (state.totalPages === 0) state.totalPages = 1;
+
       // Preserve sort params in pagination links
       const params = new URLSearchParams(window.location.search);
       if (params.has('page')) params.delete('page');
       params.set('sort_col', state.sortCol);
       params.set('sort_dir', state.sortDir);
-      const paramStr = params.toString() ? `?${params.toString()}` : '';
+      const _paramStr = params.toString() ? `?${params.toString()}` : '';
 
       // Helper to build page link
       function pageLink(label, p, extraClass = '') {
-        if (p < 1 || p > totalPages) return '';
+        if (p < 1 || p > state.totalPages) return '';
         if (p === state.page) {
           return `<span class="current-page${extraClass ? ` ${extraClass}` : ''}">${p}</span>`;
         }
-        return `<a href="/search/${encodeURIComponent(state.query)}/${p}/${paramStr}" class="${extraClass}">${label}</a>`;
+        return `<a class="${extraClass}">${label}</a>`;
       }
 
       // How many page numbers to show at once
       const windowSize = 7;
       let start = Math.max(1, state.page - Math.floor(windowSize / 2));
       let end = start + windowSize - 1;
-      if (end > totalPages) {
-        end = totalPages;
+      if (end > state.totalPages) {
+        end = state.totalPages;
         start = Math.max(1, end - windowSize + 1);
       }
 
+      let html = '';
       // First/<<
       if (state.page > 1) {
         html += `${pageLink('First', 1, 'first-page')} `;
@@ -262,26 +270,12 @@ function fetchAndRender(state, opts = { push: false, replace: false }) {
       }
 
       // >>/Last
-      if (state.page < totalPages) {
+      if (state.page < state.totalPages) {
         html += `${pageLink('&gt;&gt;', state.page + 1, 'next-page')} `;
-        html += pageLink('Last', totalPages, 'last-page');
+        html += pageLink('Last', state.totalPages, 'last-page');
       }
 
       pagination.innerHTML = `<div class="pagination-bar">${html.trim()}</div>`;
-
-      // pagination links -> SPA
-      if (pagination) {
-        pagination.querySelectorAll('a').forEach((a) => {
-          a.onclick = (ev) => {
-            ev.preventDefault();
-            const href = a.getAttribute('href') || '';
-            const parts = href.split('/').filter(Boolean);
-            const newPage = parseInt(parts[2] || '1', 10) || 1;
-            const newState = Object.assign({}, state, { page: newPage });
-            fetchAndRender(newState, { push: true });
-          };
-        });
-      }
     })
     .catch((err) => {
       console.error('Failed to fetch results', err);
