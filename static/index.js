@@ -1,28 +1,71 @@
-import { CATEGORY_ICNOS, PER_PAGE_OPTIONS, SORT_ICONS } from './consts.js';
+import { CATEGORY_ICONS, PER_PAGE_OPTIONS, SORT_ICONS } from './consts.js';
 import { escapeHtml, getTopLevelCategory, hide, humanReadableSize, show } from './helpers.js';
 
-// Wire initial page load and UI events
+const Columns = {
+  TITLE: 'title',
+  DATE: 'date',
+  SIZE: 'size',
+};
+
+const SortDir = {
+  ASC: 'asc',
+  DESC: 'desc',
+};
+
+const Category = {
+  ALL: 'All',
+  MOVIES: 'Movies',
+  TV: 'TV',
+  GAMES: 'Games',
+  MUSIC: 'Music',
+  BOOKS: 'Books',
+  SOFTWARE: 'Software',
+  ADULT: 'Adult',
+};
+
+class State {
+  constructor(
+    query = '',
+    page = 1,
+    perPage = PER_PAGE_OPTIONS[0],
+    sortCol = Columns.TITLE,
+    sortDir = SortDir.ASC,
+    category = Category.ALL,
+  ) {
+    this.query = query;
+    this.page = page;
+    this.perPage = perPage;
+    this.sortCol = sortCol;
+    this.sortDir = sortDir;
+    this.category = category;
+  }
+}
+
+const _STATE = new State();
+
+hide(perPageSelect);
+
 document.addEventListener('DOMContentLoaded', () => {
   const initialState = readStateFromUrl();
   if (initialState.query) fetchAndRender(initialState, { replace: true });
 
-  // Search form -> SPA search
   btnSearch.addEventListener('click', () => {
-    const state = {
-      query: searchbox.value,
-      page: 1,
-      perPage: PER_PAGE_OPTIONS[0],
-      sortCol: 'title',
-      sortDir: 'asc',
-      category: categories.value,
-    };
-    fetchAndRender(state, { push: true });
+    _STATE.query = searchbox.value;
+    _STATE.category = categories.value;
+    fetchAndRender(_STATE, { push: true });
   });
+
   searchbox.addEventListener('keydown', (ev) => {
     if (ev.key === 'Enter') {
       ev.preventDefault();
       btnSearch.click();
     }
+  });
+
+  perPageSelect.addEventListener('change', () => {
+    _STATE.perPage = perPageSelect.value;
+    _STATE.page = 1;
+    fetchAndRender(_STATE);
   });
 
   // Category select
@@ -69,53 +112,118 @@ function readStateFromUrl() {
   };
 }
 
-function buildPathForState(state) {
-  if (!state || !state.query) return '/';
+function buildResultsApiUrl(state) {
+  const params = new URLSearchParams();
+  params.set('search_query', state.query);
+  params.set('page', String(state.page));
+  params.set('per_page', String(state.perPage));
+  params.set('category', state.category);
+  params.set('sort_col', state.sortCol);
+  params.set('sort_dir', state.sortDir);
+  return `/results?${params.toString()}`;
+}
+
+function fetchAndRender(state, opts = { push: false, replace: false }) {
+  if (!state.query) return;
+
   const params = new URLSearchParams();
   if (state.perPage) params.set('per_page', String(state.perPage));
   if (state.sortCol) params.set('sort_col', state.sortCol);
   if (state.sortDir) params.set('sort_dir', state.sortDir);
   if (state.category) params.set('category', state.category);
-  const paramStr = params.toString();
-  return `/search/${encodeURIComponent(state.query)}/${state.page || 1}/${paramStr ? `?${paramStr}` : ''}`;
-}
+  const path = `/search/${encodeURIComponent(state.query)}/${state.page}/${params.toString()}`;
 
-function buildResultsApiUrl(state) {
-  const params = new URLSearchParams();
-  params.set('search_query', state.query || '');
-  params.set('page', String(state.page || 1));
-  params.set('per_page', String(state.perPage || 20));
-  if (state.category) params.set('category', state.category);
-  if (state.sortCol) params.set('sort_col', state.sortCol);
-  if (state.sortDir) params.set('sort_dir', state.sortDir);
-  return `/results?${params.toString()}`;
-}
-
-function fetchAndRender(state, opts = { push: false, replace: false }) {
-  if (!state || !state.query) return;
-  const path = buildPathForState(state);
   try {
     if (opts.replace) window.history.replaceState({}, '', path);
     else if (opts.push) window.history.pushState({}, '', path);
   } catch (_e) {}
-  if (results) results.innerHTML = '<div class="spinner"></div>';
-  if (results) show(results);
+
+  if (results) {
+    results.innerHTML = '<div class="spinner"></div>';
+    show(results);
+  }
   if (pagination) show(pagination);
-  const apiUrl = buildResultsApiUrl(state);
-  fetch(apiUrl)
+
+  fetch(buildResultsApiUrl(state))
     .then((res) => res.json())
     .then((data) => {
-      _renderResults(
-        data.result || [],
-        data.total_count || 0,
-        results,
-        state.page || 1,
-        state.perPage || 20,
-        PER_PAGE_OPTIONS,
-        pagination,
-        state.sortCol || 'title',
-        state.sortDir || 'asc',
-      );
+      if (searchbox.value.length < 3) {
+        results.innerHTML = '<p>Please enter at least 3 characters to search.</p>';
+        hide(perPageContainer);
+        hide(pagination);
+        return;
+      }
+
+      const startIdx = data.total_count === 0 ? 0 : (state.page - 1) * state.perPage + 1;
+      const endIdx = Math.min(state.page * state.perPage, data.total_count);
+      const rangeText = data.total_count === 0 ? '' : `${startIdx}-${endIdx}`;
+
+      resultsCount.innerHTML = `${rangeText ? `<span class='results-range'>Showing results ${rangeText}<br></span> ` : ''} ${data.total_count} total found`;
+
+      if (data.result.length === 0) {
+        results.innerHTML = '<p>No results found.</p>';
+        hide(perPageContainer);
+        hide(pagination);
+        return;
+      }
+
+      show(results);
+      show(perPageSelect);
+      show(pagination);
+
+      results.innerHTML = `
+<table class="results-table compact-table">
+    <thead>
+        <tr>
+            <th class="sortable" data-col="title">Name ${state.sortCol === 'title' ? SORT_ICONS[state.sortDir] : ''}</th>
+            <th class="sortable" data-col="date">Date ${state.sortCol === 'date' ? SORT_ICONS[state.sortDir] : ''}</th>
+            <th class="sortable" data-col="size">Size ${state.sortCol === 'size' ? SORT_ICONS[state.sortDir] : ''}</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        ${data.result
+          .map((r) => {
+            const topCat = getTopLevelCategory(r.cat);
+            const icon = CATEGORY_ICONS[topCat] || CATEGORY_ICONS.Other;
+            return `
+            <tr class="result-card-row">
+              <td class="result-title">
+                <span class="cat-icon" title="${escapeHtml(topCat)}">${icon}</span>
+                <span class="result-title-text">${escapeHtml(r.title)}</span>
+              </td>
+                <td>${escapeHtml(r.date)}</td>
+                <td>${humanReadableSize(Number(r.size))}</td>
+                <td>
+                    <a href="${r.magnet}" class="magnet-link" title="Download via Magnet">
+                      <i class="bi bi-link magnet-icon"></i>
+                    </a>
+                </td>
+            </tr>
+            `;
+          })
+          .join('')}
+    </tbody>
+</table>
+        `;
+      // Add sorting event listeners
+      setTimeout(() => {
+        document.querySelectorAll('.results-table th.sortable').forEach((th) => {
+          th.onclick = () => {
+            const col = th.getAttribute('data-col');
+
+            if (state.sortCol === col) {
+              state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+              state.sortCol = col;
+              state.sortDir = 'asc';
+            }
+            state.page = 1;
+            fetchAndRender(state, { push: true });
+          };
+        });
+      }, 0);
+
       if ((data.result || []).length > 0) {
         _renderPagination(
           data.total_count || 0,
@@ -146,7 +254,7 @@ function fetchAndRender(state, opts = { push: false, replace: false }) {
     })
     .catch((err) => {
       console.error('Failed to fetch results', err);
-      if (results) results.innerHTML = '<p>Error loading results.</p>';
+      if (data.result) data.result.innerHTML = '<p>Error loading results.</p>';
     });
 }
 
@@ -206,142 +314,4 @@ function _renderPagination(
   }
 
   paginationContainer.innerHTML = `<div class="pagination-bar">${html.trim()}</div>`;
-}
-
-function _renderResults(
-  results,
-  totalCount,
-  resultsContainer,
-  page,
-  perPage,
-  perPageOptions,
-  paginationContainer,
-  sortCol,
-  sortDir,
-) {
-  if (_checkMinQueryLength()) return;
-  show(results);
-  if (resultsContainer) resultsContainer.classList.remove('hidden');
-  // Per-page dropdown UI
-  // Calculate current range
-  const startIdx = totalCount === 0 ? 0 : (page - 1) * perPage + 1;
-  const endIdx = Math.min(page * perPage, totalCount);
-  const rangeText = totalCount === 0 ? '' : `${startIdx}-${endIdx}`;
-  const perPageHtml = `
-<div class="per-page-bar">
-  <div class="results-count">
-    ${rangeText ? `<span class='results-range'>Showing results ${rangeText}<br></span> ` : ''}${totalCount} total found
-  </div>
-  <div class="per-page-controls">
-    <label for="perPageSelect">Per page:</label>
-    <select id="perPageSelect" class="per-page-select">
-      ${perPageOptions.map((opt) => `<option value="${opt}"${opt === perPage ? ' selected' : ''}>${opt}</option>`).join('')}
-    </select>
-  </div>
-</div>`;
-  perPageContainer.innerHTML = perPageHtml;
-  if (perPageContainer) perPageContainer.classList.remove('hidden');
-  setTimeout(() => {
-    if (perPageSelect) {
-      perPageSelect.onchange = () => {
-        const params = new URLSearchParams(window.location.search);
-        params.set('per_page', perPageSelect.value);
-        // Always go to page 1 when per-page changes
-        params.set('page', '1');
-        // If using /search/{query}/{page}/ path, update location accordingly
-        const pathParts = window.location.pathname.split('/').filter(Boolean);
-        if (pathParts[0] === 'search' && pathParts.length >= 2) {
-          let url = `/search/${decodeURIComponent(pathParts[1])}/1/`;
-          const paramStr = params.toString();
-          if (paramStr) url += `?${paramStr}`;
-          window.location.href = url;
-        } else {
-          window.location.search = params.toString();
-        }
-      };
-    }
-  }, 0);
-  if (results.length === 0) {
-    if (perPageContainer) {
-      perPageContainer.innerHTML = '';
-      perPageContainer.classList.add('hidden');
-    }
-    if (resultsContainer) {
-      resultsContainer.innerHTML = '<p>No results found.</p>';
-      resultsContainer.classList.remove('hidden');
-    }
-    if (paginationContainer) paginationContainer.classList.add('hidden');
-    return;
-  }
-  if (paginationContainer) paginationContainer.classList.remove('hidden');
-  // Sorting state
-  if (!window._rtSortState) {
-    window._rtSortState = { col: sortCol, dir: sortDir };
-  }
-  const sortState = window._rtSortState;
-  resultsContainer.innerHTML = `
-<table class="results-table compact-table">
-    <thead>
-        <tr>
-            <th class="sortable" data-col="title">Name ${sortState.col === 'title' ? SORT_ICONS[sortState.dir] : ''}</th>
-            <th class="sortable" data-col="date">Date ${sortState.col === 'date' ? SORT_ICONS[sortState.dir] : ''}</th>
-            <th class="sortable" data-col="size">Size ${sortState.col === 'size' ? SORT_ICONS[sortState.dir] : ''}</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        ${results
-          .map((r) => {
-            const topCat = getTopLevelCategory(r.cat);
-            const icon = CATEGORY_ICNOS[topCat] || CATEGORY_ICNOS.Other;
-            return `
-            <tr class="result-card-row">
-              <td class="result-title">
-                <span class="cat-icon" title="${escapeHtml(topCat)}">${icon}</span>
-                <span class="result-title-text">${escapeHtml(r.title)}</span>
-              </td>
-                <td>${escapeHtml(r.date)}</td>
-                <td>${humanReadableSize(Number(r.size))}</td>
-                <td>
-                    <a href="${r.magnet}" class="magnet-link" title="Download via Magnet">
-                      <i class="bi bi-link magnet-icon"></i>
-                    </a>
-                </td>
-            </tr>
-            `;
-          })
-          .join('')}
-    </tbody>
-</table>
-        `;
-  // Add sorting event listeners
-  setTimeout(() => {
-    document.querySelectorAll('.results-table th.sortable').forEach((th) => {
-      th.onclick = () => {
-        const col = th.getAttribute('data-col');
-        if (sortState.col === col) {
-          sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
-        } else {
-          sortState.col = col;
-          sortState.dir = 'asc';
-        }
-        // Use SPA fetch: update state and fetch page 1 with new sort
-        const s = readStateFromUrl();
-        s.page = 1;
-        s.sortCol = sortState.col;
-        s.sortDir = sortState.dir;
-        fetchAndRender(s, { push: true });
-      };
-    });
-  }, 0);
-}
-
-function _checkMinQueryLength() {
-  if (searchbox.value.length < 3) {
-    results.innerHTML = '<p>Please enter at least 3 characters to search.</p>';
-    if (perPageContainer) hide(perPageContainer);
-    return true;
-  }
-  if (perPageContainer) show(perPageContainer);
-  return false;
 }

@@ -23,7 +23,7 @@ export const CATEGORY_SETS = {
   Adult: new Set(['xxx']),
 };
 
-export const CATEGORY_ICNOS = {
+export const CATEGORY_ICONS = {
   Movies: '<i class="bi bi-film" title="Movies"></i>',
   TV: '<i class="bi bi-tv" title="TV"></i>',
   Games: '<i class="bi bi-controller" title="Games"></i>',

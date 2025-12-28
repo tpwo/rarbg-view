@@ -48,7 +48,22 @@
           </form>
         </div>
         <div id="results"></div>
-        <div id="perPageContainer"></div>
+
+        <div id="perPageContainer">
+          <div class="per-page-bar">
+            <div id="resultsCount" class="results-count">
+              <span class="results-range"></span>
+            </div>
+            <div class="per-page-controls">
+              <label for="perPageSelect"></label>
+              <select id="perPageSelect" class="per-page-select" onchange>
+                <option value="20">20</option>
+                <option value="40">40</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+        </div>
         <div id="pagination"></div>
       </div>
     </main>
