@@ -123,7 +123,6 @@ function fetchAndRender(state, opts = { push: false, replace: false }) {
 
 // Wire initial page load and UI events
 document.addEventListener('DOMContentLoaded', () => {
-  timestamp.innerHTML = new Date().toLocaleString();
   const initialState = readStateFromUrl();
   if (initialState.query) fetchAndRender(initialState, { replace: true });
 

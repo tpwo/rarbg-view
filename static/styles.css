@@ -110,13 +110,6 @@ button,
   min-width: 0;
 }
 
-.timestamp-footer {
-  font-style: italic;
-  font-size: 0.95rem;
-  color: var(--color-muted);
-  margin-top: 2rem;
-}
-
 .results-list {
   list-style: none;
   padding: 0;
