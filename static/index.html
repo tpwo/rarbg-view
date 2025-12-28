@@ -47,8 +47,19 @@
             </button>
           </form>
         </div>
-        <div id="results"></div>
-
+        <div id="results">
+          <table class="results-table compact-table">
+            <thead id="tableHead">
+              <tr>
+                <th class="sortable" data-col="title"></th>
+                <th class="sortable" data-col="date"></th>
+                <th class="sortable" data-col="size"></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
         <div id="perPageContainer">
           <div class="per-page-bar">
             <div id="resultsCount" class="results-count">

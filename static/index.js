@@ -68,7 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchAndRender(_STATE);
   });
 
-  // Category select
   if (categories) {
     categories.addEventListener('change', () => {
       const q = searchbox ? searchbox.value : '';
@@ -80,6 +79,21 @@ document.addEventListener('DOMContentLoaded', () => {
       fetchAndRender(state, { push: true });
     });
   }
+
+  document.addEventListener('click', (ev) => {
+    if (ev.target.nodeName === 'TH') {
+      const col = ev.target.getAttribute('data-col');
+
+      if (_STATE.sortCol === col) {
+        _STATE.sortDir = _STATE.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        _STATE.sortCol = col;
+        _STATE.sortDir = 'asc';
+      }
+      _STATE.page = 1;
+      fetchAndRender(_STATE, { push: true });
+    }
+  });
 
   // Handle popstate to support back/forward navigation
   window.addEventListener('popstate', () => {
@@ -206,23 +220,6 @@ function fetchAndRender(state, opts = { push: false, replace: false }) {
     </tbody>
 </table>
         `;
-      // Add sorting event listeners
-      setTimeout(() => {
-        document.querySelectorAll('.results-table th.sortable').forEach((th) => {
-          th.onclick = () => {
-            const col = th.getAttribute('data-col');
-
-            if (state.sortCol === col) {
-              state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-            } else {
-              state.sortCol = col;
-              state.sortDir = 'asc';
-            }
-            state.page = 1;
-            fetchAndRender(state, { push: true });
-          };
-        });
-      }, 0);
 
       if ((data.result || []).length > 0) {
         _renderPagination(
