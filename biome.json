@@ -20,6 +20,11 @@
       "trailingCommas": "all"
     }
   },
+  "html": {
+    "formatter": {
+      "enabled": true
+    }
+  },
   "json": {
     "formatter": {
       "trailingCommas": "none"
