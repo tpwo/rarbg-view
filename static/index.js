@@ -255,10 +255,18 @@ function _renderResults(
   const startIdx = totalCount === 0 ? 0 : (page - 1) * perPage + 1;
   const endIdx = Math.min(page * perPage, totalCount);
   const rangeText = totalCount === 0 ? '' : `${startIdx}-${endIdx}`;
-  const perPageHtml = `<div class="per-page-bar">
-        <div class="results-count">${rangeText ? `<span class='results-range'>Showing results ${rangeText}<br></span> ` : ''}${totalCount} total found</div>
-        <div class="per-page-controls"><label for="per-page-select">Per page:</label><select id="per-page-select" class="per-page-select">${perPageOptions.map((opt) => `<option value="${opt}"${opt === perPage ? ' selected' : ''}>${opt}</option>`).join('')}</select></div>
-      </div>`;
+  const perPageHtml = `
+<div class="per-page-bar">
+  <div class="results-count">
+    ${rangeText ? `<span class='results-range'>Showing results ${rangeText}<br></span> ` : ''}${totalCount} total found
+  </div>
+  <div class="per-page-controls">
+    <label for="per-page-select">Per page:</label>
+    <select id="per-page-select" class="per-page-select">
+      ${perPageOptions.map((opt) => `<option value="${opt}"${opt === perPage ? ' selected' : ''}>${opt}</option>`).join('')}
+    </select>
+  </div>
+</div>`;
   document.getElementById('per-page-container').innerHTML = perPageHtml;
   const _ppc = document.getElementById('per-page-container');
   if (_ppc) _ppc.classList.remove('hidden');
@@ -303,39 +311,39 @@ function _renderResults(
   }
   const sortState = window._rtSortState;
   resultsContainer.innerHTML = `
-            <table class="results-table compact-table">
-                <thead>
-                    <tr>
-                        <th class="sortable" data-col="title">Name ${sortState.col === 'title' ? SORT_ICONS[sortState.dir] : ''}</th>
-                        <th class="sortable" data-col="date">Date ${sortState.col === 'date' ? SORT_ICONS[sortState.dir] : ''}</th>
-                        <th class="sortable" data-col="size">Size ${sortState.col === 'size' ? SORT_ICONS[sortState.dir] : ''}</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${results
-                      .map((r) => {
-                        const topCat = getTopLevelCategory(r.cat);
-                        const icon = CATEGORY_ICNOS[topCat] || CATEGORY_ICNOS.Other;
-                        return `
-                        <tr class="result-card-row">
-                          <td class="result-title">
-                            <span class="cat-icon" title="${escapeHtml(topCat)}">${icon}</span>
-                            <span class="result-title-text">${escapeHtml(r.title)}</span>
-                          </td>
-                            <td>${escapeHtml(r.date)}</td>
-                            <td>${humanReadableSize(Number(r.size))}</td>
-                            <td>
-                                <a href="${r.magnet}" class="magnet-link" title="Download via Magnet">
-                                  <i class="bi bi-link magnet-icon"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        `;
-                      })
-                      .join('')}
-                </tbody>
-            </table>
+<table class="results-table compact-table">
+    <thead>
+        <tr>
+            <th class="sortable" data-col="title">Name ${sortState.col === 'title' ? SORT_ICONS[sortState.dir] : ''}</th>
+            <th class="sortable" data-col="date">Date ${sortState.col === 'date' ? SORT_ICONS[sortState.dir] : ''}</th>
+            <th class="sortable" data-col="size">Size ${sortState.col === 'size' ? SORT_ICONS[sortState.dir] : ''}</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        ${results
+          .map((r) => {
+            const topCat = getTopLevelCategory(r.cat);
+            const icon = CATEGORY_ICNOS[topCat] || CATEGORY_ICNOS.Other;
+            return `
+            <tr class="result-card-row">
+              <td class="result-title">
+                <span class="cat-icon" title="${escapeHtml(topCat)}">${icon}</span>
+                <span class="result-title-text">${escapeHtml(r.title)}</span>
+              </td>
+                <td>${escapeHtml(r.date)}</td>
+                <td>${humanReadableSize(Number(r.size))}</td>
+                <td>
+                    <a href="${r.magnet}" class="magnet-link" title="Download via Magnet">
+                      <i class="bi bi-link magnet-icon"></i>
+                    </a>
+                </td>
+            </tr>
+            `;
+          })
+          .join('')}
+    </tbody>
+</table>
         `;
   // Add sorting event listeners
   setTimeout(() => {
