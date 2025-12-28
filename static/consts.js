@@ -1,3 +1,5 @@
+export const PER_PAGE_OPTIONS = [20, 40, 100];
+
 export const CATEGORY_SETS = {
   Movies: new Set([
     'movies',

@@ -1,29 +1,5 @@
-import { CATEGORY_ICNOS, SORT_ICONS } from './consts.js';
-import { escapeHtml, getTopLevelCategory, humanReadableSize } from './helpers.js';
-
-// Config
-const PER_PAGE_OPTIONS = [20, 40, 100];
-
-// Utilities
-function show(el) {
-  if (!el) return;
-  try {
-    el.classList.remove('hidden');
-  } catch (_e) {}
-  try {
-    el.style.display = '';
-  } catch (_e) {}
-}
-
-function hide(el) {
-  if (!el) return;
-  try {
-    el.classList.add('hidden');
-  } catch (_e) {}
-  try {
-    el.style.display = 'none';
-  } catch (_e) {}
-}
+import { CATEGORY_ICNOS, PER_PAGE_OPTIONS, SORT_ICONS } from './consts.js';
+import { escapeHtml, getTopLevelCategory, hide, humanReadableSize, show } from './helpers.js';
 
 function readStateFromUrl() {
   const parts = window.location.pathname.split('/').filter(Boolean);

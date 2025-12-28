@@ -1,5 +1,25 @@
 import { CATEGORY_SETS } from './consts.js';
 
+export function show(el) {
+  if (!el) return;
+  try {
+    el.classList.remove('hidden');
+  } catch (_e) {}
+  try {
+    el.style.display = '';
+  } catch (_e) {}
+}
+
+export function hide(el) {
+  if (!el) return;
+  try {
+    el.classList.add('hidden');
+  } catch (_e) {}
+  try {
+    el.style.display = 'none';
+  } catch (_e) {}
+}
+
 export function getTopLevelCategory(cat) {
   for (const [top, subs] of Object.entries(CATEGORY_SETS)) {
     if (subs.has(cat)) return top;
