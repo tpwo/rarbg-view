@@ -3,14 +3,28 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 )
 
 func main() {
-	fmt.Println("Hello world!")
-	http.HandleFunc("/hello", hello)
+
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
+	http.HandleFunc("/", root)
+
+	fmt.Println("Listening...")
 	http.ListenAndServe(":8000", nil)
 }
 
-func hello(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, "hello\n")
+func root(w http.ResponseWriter, req *http.Request) {
+	w.Write(returnFile("static/index.html"))
+}
+
+func returnFile(path string) []byte {
+	fileBytes, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	return fileBytes
 }
