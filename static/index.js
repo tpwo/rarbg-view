@@ -70,17 +70,11 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchAndRender(_STATE);
   });
 
-  if (categories) {
-    categories.addEventListener('change', () => {
-      const q = searchbox ? searchbox.value : '';
-      if (!q) return; // nothing to search
-      const state = readStateFromUrl();
-      state.query = q;
-      state.page = 1;
-      state.category = categories.value || '';
-      fetchAndRender(state, { push: true });
-    });
-  }
+  categories.addEventListener('change', () => {
+    _STATE.category = categories.value;
+    _STATE.page = 1;
+    fetchAndRender(_STATE, { push: true });
+  });
 
   document.addEventListener('click', (ev) => {
     if (ev.target.nodeName === 'TH') {
