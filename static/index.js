@@ -1,6 +1,59 @@
 import { CATEGORY_ICNOS, PER_PAGE_OPTIONS, SORT_ICONS } from './consts.js';
 import { escapeHtml, getTopLevelCategory, hide, humanReadableSize, show } from './helpers.js';
 
+// Wire initial page load and UI events
+document.addEventListener('DOMContentLoaded', () => {
+  const initialState = readStateFromUrl();
+  if (initialState.query) fetchAndRender(initialState, { replace: true });
+
+  // Search form -> SPA search
+  btnSearch.addEventListener('click', () => {
+    const state = {
+      query: searchbox.value,
+      page: 1,
+      perPage: PER_PAGE_OPTIONS[0],
+      sortCol: 'title',
+      sortDir: 'asc',
+      category: categories.value,
+    };
+    fetchAndRender(state, { push: true });
+  });
+  searchbox.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      btnSearch.click();
+    }
+  });
+
+  // Category select
+  if (categories) {
+    categories.addEventListener('change', () => {
+      const q = searchbox ? searchbox.value : '';
+      if (!q) return; // nothing to search
+      const state = readStateFromUrl();
+      state.query = q;
+      state.page = 1;
+      state.category = categories.value || '';
+      fetchAndRender(state, { push: true });
+    });
+  }
+
+  // Handle popstate to support back/forward navigation
+  window.addEventListener('popstate', () => {
+    const s = readStateFromUrl();
+    if (s.query) fetchAndRender(s, { replace: true });
+  });
+
+  // Intercept magnet link clicks to stay in the same tab
+  document.body.addEventListener('click', (e) => {
+    const target = e.target.closest?.('a.magnet-link');
+    if (target) {
+      e.preventDefault();
+      window.location.href = target.href;
+    }
+  });
+});
+
 function readStateFromUrl() {
   const parts = window.location.pathname.split('/').filter(Boolean);
   const q = decodeURIComponent(parts[1] || '');
@@ -96,59 +149,6 @@ function fetchAndRender(state, opts = { push: false, replace: false }) {
       if (results) results.innerHTML = '<p>Error loading results.</p>';
     });
 }
-
-// Wire initial page load and UI events
-document.addEventListener('DOMContentLoaded', () => {
-  const initialState = readStateFromUrl();
-  if (initialState.query) fetchAndRender(initialState, { replace: true });
-
-  // Search form -> SPA search
-  btnSearch.addEventListener('click', () => {
-    const state = {
-      query: searchbox.value,
-      page: 1,
-      perPage: PER_PAGE_OPTIONS[0],
-      sortCol: 'title',
-      sortDir: 'asc',
-      category: categories.value,
-    };
-    fetchAndRender(state, { push: true });
-  });
-  searchbox.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter') {
-      ev.preventDefault();
-      btnSearch.click();
-    }
-  });
-
-  // Category select
-  if (categories) {
-    categories.addEventListener('change', () => {
-      const q = searchbox ? searchbox.value : '';
-      if (!q) return; // nothing to search
-      const state = readStateFromUrl();
-      state.query = q;
-      state.page = 1;
-      state.category = categories.value || '';
-      fetchAndRender(state, { push: true });
-    });
-  }
-
-  // Handle popstate to support back/forward navigation
-  window.addEventListener('popstate', () => {
-    const s = readStateFromUrl();
-    if (s.query) fetchAndRender(s, { replace: true });
-  });
-
-  // Intercept magnet link clicks to stay in the same tab
-  document.body.addEventListener('click', (e) => {
-    const target = e.target.closest?.('a.magnet-link');
-    if (target) {
-      e.preventDefault();
-      window.location.href = target.href;
-    }
-  });
-});
 
 function _renderPagination(
   totalCount,
