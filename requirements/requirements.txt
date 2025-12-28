@@ -10,7 +10,7 @@ anyio==4.12.0
     #   watchfiles
 click==8.3.1
     # via uvicorn
-fastapi==0.127.0
+fastapi==0.128.0
     # via -r requirements/requirements.in
 h11==0.16.0
     # via uvicorn
@@ -18,10 +18,6 @@ httptools==0.7.1
     # via uvicorn
 idna==3.11
     # via anyio
-jinja2==3.1.6
-    # via -r requirements/requirements.in
-markupsafe==3.0.3
-    # via jinja2
 pydantic==2.12.5
     # via fastapi
 pydantic-core==2.41.5

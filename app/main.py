@@ -7,11 +7,9 @@ from sqlite3 import Connection
 
 from fastapi import FastAPI
 from fastapi import Query
-from fastapi import Request
 from fastapi.responses import FileResponse
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
 from app.category_map import CATEGORY_MAP
 
@@ -80,12 +78,12 @@ app = FastAPI()
 CONN = get_connection(DB_FILE)
 ensure_fts5_table()
 app.mount('/static', StaticFiles(directory='static', html=True), 'static')
-templates = Jinja2Templates(directory='templates')
+app.mount('/templates', StaticFiles(directory='templates', html=True), 'templates')
 
 
 @app.get('/')
-def main_search(request: Request) -> object:
-    return templates.TemplateResponse('search.html', {'request': request})
+def main_search() -> object:
+    return FileResponse('templates/search.html')
 
 
 @app.get('/favicon.ico')
@@ -104,8 +102,8 @@ def search_query_redirect(query: str) -> RedirectResponse:
 
 
 @app.get('/search/{query}/{page}/')
-def search_query_page(request: Request, query: str, page: int) -> object:
-    return templates.TemplateResponse('search.html', {'request': request})
+def search_query_page() -> object:
+    return FileResponse('templates/search.html')
 
 
 @app.get('/results')

@@ -1,34 +1,48 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>RARBG Viewer</title>
 
-{% block title %}RARBG Viewer{% endblock %}
-
-{% block content %}
-<div class="main-content">
-    <div class="search-card">
-        <form id="search-form" onsubmit="return false;">
-            <input type="text" class="search-box" id="search-box" autofocus placeholder="Search for names...">
-            <select id="category-select">
-                <option value="">All Categories</option>
-                <option value="Movies">Movies</option>
-                <option value="TV">TV</option>
-                <option value="Games">Games</option>
-                <option value="Music">Music</option>
-                <option value="Books">Books</option>
-                <option value="Software">Software</option>
-                <option value="Adult">Adult</option>
-            </select>
-            <button type="button" id="btn-search" class="search-btn">
-                <span class="btn-icon"><i class="bi bi-search"></i></span>
-                Search
-            </button>
-        </form>
-    </div>
-    <div id="results"></div>
-    <div id="per-page-container"></div>
-    <div id="pagination"></div>
-</div>
-{% endblock %}
-
-{% block head %}
-<script type="module" src="/static/script.js"></script>
-{% endblock %}
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script type="module" src="/static/script.js"></script>
+</head>
+<body>
+    <header class="site-header">
+        <a href="/" class="site-brand">
+            <img src="/static/logo.svg" alt="RARBG Viewer Logo" class="logo" />
+            <h1 class="site-title">RARBG Viewer</h1>
+        </a>
+    </header>
+    <main>
+        <div class="main-content">
+            <div class="search-card">
+                <form id="search-form" onsubmit="return false;">
+                    <input type="text" class="search-box" id="search-box" autofocus placeholder="Search for names...">
+                    <select id="category-select">
+                        <option value="">All Categories</option>
+                        <option value="Movies">Movies</option>
+                        <option value="TV">TV</option>
+                        <option value="Games">Games</option>
+                        <option value="Music">Music</option>
+                        <option value="Books">Books</option>
+                        <option value="Software">Software</option>
+                        <option value="Adult">Adult</option>
+                    </select>
+                    <button type="button" id="btn-search" class="search-btn">
+                        <span class="btn-icon"><i class="bi bi-search"></i></span>
+                        Search
+                    </button>
+                </form>
+            </div>
+            <div id="results"></div>
+            <div id="per-page-container"></div>
+            <div id="pagination"></div>
+        </div>
+    </main>
+    <footer>
+        <p class="timestamp-footer">Page refreshed at <span id="timestamp"></span></p>
+    </footer>
+</body>
+</html>
