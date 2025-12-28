@@ -7,6 +7,7 @@ from sqlite3 import Connection
 
 from fastapi import FastAPI
 from fastapi import Query
+from fastapi import Request
 from fastapi.responses import FileResponse
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -81,28 +82,18 @@ app.mount('/static', StaticFiles(directory='static', html=True), 'static')
 
 
 @app.get('/')
-def main_search() -> object:
+def main_search() -> FileResponse:
     return FileResponse('static/index.html')
+
+
+@app.exception_handler(404)
+def redirect_to_root(request: Request, exc: Exception) -> RedirectResponse:
+    return RedirectResponse(url='/')
 
 
 @app.get('/favicon.ico')
 async def favicon() -> FileResponse:
     return FileResponse('static/logo.svg')
-
-
-@app.get('/search/')
-def search_root() -> RedirectResponse:
-    return RedirectResponse(url='/')
-
-
-@app.get('/search/{query}/')
-def search_query_redirect(query: str) -> RedirectResponse:
-    return RedirectResponse(url=f'/search/{query}/1/')
-
-
-@app.get('/search/{query}/{page}/')
-def search_query_page() -> object:
-    return FileResponse('static/index.html')
 
 
 @app.get('/results')
