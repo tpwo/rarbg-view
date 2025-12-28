@@ -2,8 +2,6 @@ import { CATEGORY_ICNOS, SORT_ICONS } from './consts.js';
 import { escapeHtml, getTopLevelCategory, humanReadableSize } from './helpers.js';
 
 // Elements
-const RESULTS_CONTAINER = document.getElementById('results');
-const PAGINATION_CONTAINER = document.getElementById('pagination');
 const CATEGORY_SELECT = document.getElementById('category-select');
 
 // Config
@@ -74,9 +72,9 @@ function fetchAndRender(state, opts = { push: false, replace: false }) {
     if (opts.replace) window.history.replaceState({}, '', path);
     else if (opts.push) window.history.pushState({}, '', path);
   } catch (_e) {}
-  if (RESULTS_CONTAINER) RESULTS_CONTAINER.innerHTML = '<div class="spinner"></div>';
-  if (RESULTS_CONTAINER) show(RESULTS_CONTAINER);
-  if (PAGINATION_CONTAINER) show(PAGINATION_CONTAINER);
+  if (results) results.innerHTML = '<div class="spinner"></div>';
+  if (results) show(results);
+  if (pagination) show(pagination);
   const apiUrl = buildResultsApiUrl(state);
   fetch(apiUrl)
     .then((res) => res.json())
@@ -84,18 +82,18 @@ function fetchAndRender(state, opts = { push: false, replace: false }) {
       _renderResults(
         data.result || [],
         data.total_count || 0,
-        RESULTS_CONTAINER,
+        results,
         state.page || 1,
         state.perPage || 20,
         PER_PAGE_OPTIONS,
-        PAGINATION_CONTAINER,
+        pagination,
         state.sortCol || 'title',
         state.sortDir || 'asc',
       );
       if ((data.result || []).length > 0) {
         _renderPagination(
           data.total_count || 0,
-          PAGINATION_CONTAINER,
+          pagination,
           state.perPage || 20,
           state.sortCol || 'title',
           state.sortDir || 'asc',
@@ -103,12 +101,12 @@ function fetchAndRender(state, opts = { push: false, replace: false }) {
           state.query || '',
         );
       } else {
-        if (PAGINATION_CONTAINER) hide(PAGINATION_CONTAINER);
+        if (pagination) hide(pagination);
       }
 
       // pagination links -> SPA
-      if (PAGINATION_CONTAINER) {
-        PAGINATION_CONTAINER.querySelectorAll('a').forEach((a) => {
+      if (pagination) {
+        pagination.querySelectorAll('a').forEach((a) => {
           a.onclick = (ev) => {
             ev.preventDefault();
             const href = a.getAttribute('href') || '';
@@ -122,7 +120,7 @@ function fetchAndRender(state, opts = { push: false, replace: false }) {
     })
     .catch((err) => {
       console.error('Failed to fetch results', err);
-      if (RESULTS_CONTAINER) RESULTS_CONTAINER.innerHTML = '<p>Error loading results.</p>';
+      if (results) results.innerHTML = '<p>Error loading results.</p>';
     });
 }
 
@@ -253,7 +251,7 @@ function _renderResults(
   sortDir,
 ) {
   _checkMinQueryLength();
-  show(RESULTS_CONTAINER);
+  show(results);
   if (resultsContainer) resultsContainer.classList.remove('hidden');
   // Per-page dropdown UI
   // Calculate current range
@@ -366,8 +364,8 @@ function _renderResults(
 
 function _checkMinQueryLength() {
   if (searchbox.value.length < 3) {
-    RESULTS_CONTAINER.innerHTML = '<p>Please enter at least 3 characters to search.</p>';
-    if (PAGINATION_CONTAINER) hide(PAGINATION_CONTAINER);
+    results.innerHTML = '<p>Please enter at least 3 characters to search.</p>';
+    if (pagination) hide(pagination);
     return;
   }
 }
