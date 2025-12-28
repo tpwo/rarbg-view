@@ -243,7 +243,7 @@ function _renderResults(
   sortCol,
   sortDir,
 ) {
-  _checkMinQueryLength();
+  if (_checkMinQueryLength()) return;
   show(results);
   if (resultsContainer) resultsContainer.classList.remove('hidden');
   // Per-page dropdown UI
@@ -263,9 +263,8 @@ function _renderResults(
     </select>
   </div>
 </div>`;
-  document.getElementById('per-page-container').innerHTML = perPageHtml;
-  const _ppc = document.getElementById('per-page-container');
-  if (_ppc) _ppc.classList.remove('hidden');
+  perPageContainer.innerHTML = perPageHtml;
+  if (perPageContainer) perPageContainer.classList.remove('hidden');
   setTimeout(() => {
     const select = document.getElementById('per-page-select');
     if (select) {
@@ -288,10 +287,9 @@ function _renderResults(
     }
   }, 0);
   if (results.length === 0) {
-    const _ppc2 = document.getElementById('per-page-container');
-    if (_ppc2) {
-      _ppc2.innerHTML = '';
-      _ppc2.classList.add('hidden');
+    if (perPageContainer) {
+      perPageContainer.innerHTML = '';
+      perPageContainer.classList.add('hidden');
     }
     if (resultsContainer) {
       resultsContainer.innerHTML = '<p>No results found.</p>';
@@ -366,7 +364,9 @@ function _renderResults(
 function _checkMinQueryLength() {
   if (searchbox.value.length < 3) {
     results.innerHTML = '<p>Please enter at least 3 characters to search.</p>';
-    if (pagination) hide(pagination);
-    return;
+    if (perPageContainer) hide(perPageContainer);
+    return true;
   }
+  if (perPageContainer) show(perPageContainer);
+  return false;
 }
