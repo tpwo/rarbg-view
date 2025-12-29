@@ -146,3 +146,27 @@ Compile the app without running it:
 Run without docker in DEBUG mode (more logging):
 
     just debug
+
+## Development
+
+Development notes for the maintainer(s).
+
+### Docker `stable` tag
+
+Docker images are pushed to [ghcr.io](https://github.com/tpwo/rarbg-view/pkgs/container/rarbg-view/)
+
+docker-compose.yaml[docker-compose.yaml] uses images pushed with `stable` tag, i.e.:
+
+    ghcr.io/tpwo/rarbg-view:stable
+
+To Create a new image with `stable` tag, manually run [this GitHub Actions workflow](https://github.com/tpwo/rarbg-view/actions/workflows/build.yml) against `main` branch.
+
+### Docker `latest` tag
+
+Each commit to `main` branch *automatically* creates a new image with `latest` tag. Currently this project doesn't have a sophisticated test suite, so these images can have issues.
+
+### Docker `test` tag
+
+Manual running of the [above-mentioned workflow](https://github.com/tpwo/rarbg-view/actions/workflows/build.yml) outside `main` branch, creates images with `test` tag.
+
+These should be used to test new functionality without polluting main branch and `latest` tag.
