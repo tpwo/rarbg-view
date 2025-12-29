@@ -21,7 +21,7 @@ To list all available running options run `just --list`.
 1. Clone this repo.
 1. Download [this DB dump](https://tinyurl.com/rarbg-db-zip) and put it inside [db](db) folder in the cloned repo.
 1. Run `just up` or `docker compose up --build` if you don't have `just`.
-1. Open http://127.0.0.1:8000 and use the app!
+1. Open http://127.0.0.1:1337 and use the app!
 
 ### Database
 
@@ -45,10 +45,27 @@ Attaching to server
 server  | 2025/12/29 15:23:05 Ensuring FTS5 table 'items_fts' exists...
 server  | 2025/12/29 15:23:06 FTS5 table 'items_fts' is empty. Populating from 'items' table...
 server  | 2025/12/29 15:23:10 FTS5 table 'items_fts' population complete.
-server  | 2025/12/29 15:23:10 Listening on http://127.0.0.1:8000
+server  | 2025/12/29 15:23:10 Listening on http://127.0.0.1:1337
 server  |
 server  | 2025/12/29 15:23:27 192.168.65.1:37128 - "GET /results/?search_query=abc&page=1&per_page=20&category=&sort_col=title&sort_dir=asc HTTP/1.1"
 ```
+
+### Change port
+
+By default the app runs (with or without docker) on port `1337`. You can change it using `PORT` env var.
+
+You can pass the env var before the command:
+
+```shell
+# You can pass it to `just` invocations:
+PORT=1234 just run
+PORT=1234 just up
+
+# Or directly to the underlying command:
+PORT=1234 docker compose up --build
+```
+
+For running (*only via docker*) you can also define a `.env` file with `PORT`. Rename [.env.sample](.env.sample) to `.env` and assign a custom value.
 
 ### Schema
 

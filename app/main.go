@@ -29,11 +29,21 @@ type Response struct {
 // Make sure that this file is present
 const dbFile = "./db/rarbg_db.sqlite"
 
+// Runtime parameters
 var Debug bool
+var Port int
 
 func init() {
 	debugEnv := os.Getenv("DEBUG")
 	Debug = strings.ToLower(debugEnv) == "true"
+
+	port, err := strconv.Atoi(os.Getenv("PORT"))
+	if err != nil {
+		defaultPort := 1337
+		Port = defaultPort
+	} else {
+		Port = port
+	}
 }
 
 func main() {
@@ -95,10 +105,9 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.HandleFunc("/results/", getResults(db))
 
-	var port = 8000
-	log.Printf("Listening on http://127.0.0.1:%d\n", port)
+	log.Printf("Listening on http://127.0.0.1:%d\n", Port)
 	log.Fatal(
-		http.ListenAndServe(":"+strconv.Itoa(8000), nil),
+		http.ListenAndServe(":"+strconv.Itoa(Port), nil),
 	)
 
 }

@@ -4,8 +4,11 @@ services:
     build:
       dockerfile: Dockerfile
     command: ./rarbg-view
+    # Default port is 1337. You can overwrite it in `.env` file
     ports:
-    - 8000:8000
+    - ${PORT:-1337}:${PORT:-1337}
+    environment:
+      PORT: ${PORT:-1337}
     volumes:
     - /etc/localtime:/etc/localtime:ro
     - ./db:/app/db
