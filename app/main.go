@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -123,56 +124,8 @@ func getResults(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		LogRequest(r)
 
-		query := r.URL.Query()
-
-		searchQuery := query.Get("search_query")
-
-		page, err := strconv.Atoi(query.Get("page"))
-		if err != nil || page < 1 {
-			page = 1
-		}
-
-		perPage, err := strconv.Atoi(query.Get("per_page"))
-		if err != nil || perPage < 1 || perPage > 100 {
-			perPage = 20
-		}
-
-		category := query.Get("category")
-		cats, ok := CATEGORY_MAP[category]
-		if !ok {
-			cats = nil
-		}
-
-		var catFilter string
-		if cats != nil {
-			// We have to double quote each value in `cats`.
-			// So we have a first and last quote, and then we
-			// also join each element with quotes.
-			catFilter = fmt.Sprintf(" AND i.cat IN (\"%s\")", strings.Join(cats, "\",\""))
-		} else {
-			catFilter = ""
-		}
-		fmt.Println(catFilter)
-
-		sortCol := query.Get("sort_col")
-		if sortCol == "" {
-			sortCol = "title"
-		}
-
-		sortDir := query.Get("sort_dir")
-		if sortDir == "" {
-			sortDir = "asc"
-		}
-
-		LogDebug(`
-			Query parameters:
-				search_query=%s
-				page=%d
-				per_page=%d
-				cat=%s
-				sort_col=%s
-				sort_dir=%s`,
-			searchQuery, page, perPage, category, sortCol, sortDir)
+		searchQuery, page, perPage, category, sortCol, sortDir := getUrlParams(r.URL.Query())
+		catFilter := getCatFilter(category)
 
 		queryStrCount := fmt.Sprintf(`
 			SELECT COUNT(*) FROM items_fts
@@ -182,7 +135,7 @@ func getResults(db *sql.DB) http.HandlerFunc {
 		)
 		LogDebug("COUNT(*) query: %s", queryStrCount)
 		var count int
-		err = db.QueryRow(queryStrCount).Scan(&count)
+		err := db.QueryRow(queryStrCount).Scan(&count)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Printf("ERROR: %s", err)
@@ -251,10 +204,74 @@ func getResults(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+func getUrlParams(q url.Values) (string, int, int, []string, string, string) {
+	searchQuery := q.Get("search_query")
+
+	page, err := strconv.Atoi(q.Get("page"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	perPage, err := strconv.Atoi(q.Get("per_page"))
+	if err != nil || perPage < 1 || perPage > 100 {
+		perPage = 20
+	}
+
+	category, ok := CATEGORY_MAP[q.Get("category")]
+	if !ok {
+		category = nil
+	}
+
+	sortCol := q.Get("sort_col")
+	if sortCol == "" {
+		sortCol = "title"
+	}
+
+	sortDir := q.Get("sort_dir")
+	if sortDir == "" {
+		sortDir = "asc"
+	}
+
+	LogDebug(`
+Query parameters:
+	search_query=%s
+	page=%d
+	per_page=%d
+	cat=%s
+	sort_col=%s
+	sort_dir=%s`,
+		searchQuery, page, perPage, category, sortCol, sortDir)
+
+	return searchQuery, page, perPage, category, sortCol, sortDir
+}
+
+// Get SQL WHERE condition for filtering by category
+//
+// The filtering is based on list of subcategories mapped in CATEGORY_MAP
+//
+// We have to double quote each value in `cats`.
+// So we have a first and last quote, and then we
+// also join each element with quotes.
+//
+// Resulting string is something like:
+//
+//	AND i.cat IN ("val1","val2","val3")
+func getCatFilter(c []string) string {
+	var catFilter string
+	if c != nil {
+		catFilter = fmt.Sprintf(" AND i.cat IN (\"%s\")", strings.Join(c, "\",\""))
+	} else {
+		catFilter = ""
+	}
+	LogDebug(catFilter)
+	return catFilter
+}
+
 func LogRequest(r *http.Request) {
 	log.Printf(`%s - "%s %s %s"`, r.RemoteAddr, r.Method, r.URL, r.Proto)
 }
 
+// Logs a message only if Debug is true
 func LogDebug(s string, args ...any) {
 	if Debug {
 		log.Printf(s, args...)
