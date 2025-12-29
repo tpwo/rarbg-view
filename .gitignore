@@ -1,4 +1,4 @@
-*.pyc
+*.bak
 *.zip
-.tox
 db/*.sqlite
+rarbg-view

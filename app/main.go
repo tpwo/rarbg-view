@@ -1,0 +1,246 @@
+package main
+
+import (
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+
+	_ "github.com/mattn/go-sqlite3"
+)
+
+type Result struct {
+	Title  string `json:"title"`
+	Cat    string `json:"cat"`
+	Date   string `json:"date"`
+	Size   int    `json:"size"`
+	Magnet string `json:"magnet"`
+}
+
+type Response struct {
+	Result     []Result `json:"result"`
+	TotalCount int      `json:"total_count"`
+}
+
+// Make sure that this file is present
+const dbFile = "./db/rarbg_db.sqlite"
+
+var Debug bool
+
+func init() {
+	debugEnv := os.Getenv("DEBUG")
+	Debug = strings.ToLower(debugEnv) == "true"
+}
+
+func main() {
+	db, err := sql.Open("sqlite3", dbFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	log.Println("Ensuring FTS5 table 'items_fts' exists...")
+	_, err = db.Exec(`
+		CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5(
+			title,
+			content='items',
+			content_rowid='rowid')`,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Check if FTS5 table is empty
+	//
+	// This is a bit stupid, but this table is non-empty,
+	// i.e. pure COUNT(*) returns non-zero rows, after the query
+	// above creates items_fts.
+	//
+	// items_fts exists now, and we still have to fill it with data.
+	//
+	// So we check for sample match `abc` which returns something if
+	// FTS5 is properly populated. DB state is quite static in this
+	// project, so this is good enough for now.
+	var count int
+	err = db.QueryRow(`
+		SELECT COUNT(*) FROM items_fts
+		JOIN items i on i.rowid = items_fts.rowid
+		WHERE items_fts MATCH "abc"`,
+	).Scan(&count)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if count == 0 {
+		log.Println("FTS5 table 'items_fts' is empty. Populating from 'items' table...")
+		_, err = db.Exec(`
+			INSERT INTO items_fts(rowid, title)
+			SELECT rowid, title FROM items`,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("FTS5 table 'items_fts' population complete.")
+
+	} else {
+		log.Println("FTS5 table 'items_fts' already populated.")
+	}
+
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/", fs)
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	http.HandleFunc("/results/", getResults(db))
+
+	var port = 8000
+	log.Printf("Listening on http://127.0.0.1:%d\n", port)
+	log.Fatal(
+		http.ListenAndServe(":"+strconv.Itoa(8000), nil),
+	)
+
+}
+
+func getResults(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		LogRequest(r)
+
+		query := r.URL.Query()
+
+		searchQuery := query.Get("search_query")
+
+		page, err := strconv.Atoi(query.Get("page"))
+		if err != nil || page < 1 {
+			page = 1
+		}
+
+		perPage, err := strconv.Atoi(query.Get("per_page"))
+		if err != nil || perPage < 1 || perPage > 100 {
+			perPage = 20
+		}
+
+		category := query.Get("category")
+		cats, ok := CATEGORY_MAP[category]
+		if !ok {
+			cats = nil
+		}
+
+		var catFilter string
+		if cats != nil {
+			// We have to double quote each value in `cats`.
+			// So we have a first and last quote, and then we
+			// also join each element with quotes.
+			catFilter = fmt.Sprintf(" AND i.cat IN (\"%s\")", strings.Join(cats, "\",\""))
+		} else {
+			catFilter = ""
+		}
+		fmt.Println(catFilter)
+
+		sortCol := query.Get("sort_col")
+		if sortCol == "" {
+			sortCol = "title"
+		}
+
+		sortDir := query.Get("sort_dir")
+		if sortDir == "" {
+			sortDir = "asc"
+		}
+
+		LogDebug(`
+			Query parameters:
+				search_query=%s
+				page=%d
+				per_page=%d
+				cat=%s
+				sort_col=%s
+				sort_dir=%s`,
+			searchQuery, page, perPage, category, sortCol, sortDir)
+
+		queryStrCount := fmt.Sprintf(`
+			SELECT COUNT(*) FROM items_fts
+			JOIN items i ON i.rowid = items_fts.rowid
+			WHERE items_fts MATCH "%s"%s`,
+			searchQuery, catFilter,
+		)
+		LogDebug("COUNT(*) query: %s", queryStrCount)
+		var count int
+		err = db.QueryRow(queryStrCount).Scan(&count)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("ERROR: %s", err)
+			return
+		}
+		LogDebug("Total count: %d", count)
+
+		offset := (page - 1) * perPage
+
+		queryStr := fmt.Sprintf(`
+			SELECT i.title, i.cat, i.dt, i.size, i.hash
+			FROM items_fts
+			JOIN items i ON i.rowid = items_fts.rowid
+			WHERE items_fts MATCH "%s"%s
+			ORDER BY i."%s" %s
+			LIMIT %d OFFSET %d`,
+			searchQuery, catFilter, sortCol, sortDir, perPage, offset,
+		)
+		LogDebug("SELECT query: %s", queryStr)
+
+		rows, err := db.Query(queryStr)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("ERROR: %s", err)
+			return
+		}
+		defer rows.Close()
+
+		// Initialize it as empty list to avoid returning nil if query returns nothing
+		results := make([]Result, 0)
+
+		for rows.Next() {
+			var title string
+			var cat string
+			var dt string
+			var size sql.NullInt64
+			var hash string
+			err := rows.Scan(&title, &cat, &dt, &size, &hash)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Printf("ERROR: %s", err)
+				return
+			}
+
+			var intSize int
+			if size.Valid {
+				intSize = int(size.Int64)
+			} else {
+				intSize = 0
+			}
+
+			magnet := fmt.Sprintf("magnet:?xt=urn:btih:%s&dn=%s", hash, title)
+
+			res := Result{title, cat, dt, intSize, magnet}
+			results = append(results, res)
+		}
+
+		response := Response{
+			Result:     results,
+			TotalCount: count,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+
+	}
+}
+
+func LogRequest(r *http.Request) {
+	log.Printf(`%s - "%s %s %s"`, r.RemoteAddr, r.Method, r.URL, r.Proto)
+}
+
+func LogDebug(s string, args ...any) {
+	if Debug {
+		log.Printf(s, args...)
+	}
+}

@@ -1,12 +1,16 @@
-FROM python:3.14.2-slim-trixie
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+FROM golang:1.25 AS build
 
 WORKDIR /app
 
-COPY requirements requirements
-RUN uv venv && uv pip install -r requirements/requirements.txt
-ENV PATH="/app/.venv/bin/:$PATH"
+COPY go.mod go.sum ./
+RUN go mod download
 
 COPY --parents app static /app/
 
-CMD ["uvicorn", "app.main:app"]
+RUN go build -v -ldflags="-s -w" --tags fts5 -o rarbg-view ./app
+
+FROM ubuntu:24.04
+COPY --from=build /app/rarbg-view /app/rarbg-view
+COPY --from=build /app/static /app/static
+WORKDIR /app
+CMD ["./rarbg-view"]

@@ -1,10 +1,10 @@
-# RARBG Viewer
+# RARBG View
 
 Simple web viewer for SQLite databases with schema compatible with [RARBG](https://en.wikipedia.org/wiki/RARBG) dump.
 
 Under the hood this project uses [FTS5](https://sqlite.org/fts5.html) which makes it *fast*.
 
-<img alt="rarbg-viewer UI" src="https://github.com/user-attachments/assets/a5477691-214d-4f56-b824-8f3d1cf031d3" />
+<img alt="RARBG View UI" src="https://github.com/user-attachments/assets/d9c22e17-bea1-410c-9a3a-3f46b89b550e" />
 
 ## Running
 
@@ -103,6 +103,10 @@ To run without docker:
 
     just run
 
-To run with auto-reload mode:
+Compile the app without running it:
 
-    just listen
+    just build
+
+Run without docker in DEBUG mode (more logging):
+
+    just debug
