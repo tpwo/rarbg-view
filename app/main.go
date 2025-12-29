@@ -80,8 +80,11 @@ type Response struct {
 	TotalCount int      `json:"total_count"`
 }
 
+// Make sure that this file is present
+const dbFile = "./db/rarbg_db.sqlite"
+
 func main() {
-	db, err := sql.Open("sqlite3", "./db/rarbg_db.sqlite")
+	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
 		log.Fatal(err)
 	}
