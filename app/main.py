@@ -56,17 +56,6 @@ def get_results(
         }
     offset = (page - 1) * per_page
     cats = CATEGORY_MAP.get(category) if category else None
-    # Validate sort_col and sort_dir
-    allowed_cols = {'title', 'dt', 'size'}
-    allowed_dirs = {'asc', 'desc'}
-    col_map = {'title': 'title', 'dt': 'dt', 'size': 'size'}
-    sort_col_sql = col_map.get(sort_col, 'title')
-    sort_dir_sql = 'ASC' if sort_dir.lower() == 'asc' else 'DESC'
-
-    if sort_col not in allowed_cols:
-        sort_col_sql = 'title'
-    if sort_dir.lower() not in allowed_dirs:
-        sort_dir_sql = 'ASC'
 
     with CONN as conn:
         cursor = conn.cursor()
@@ -98,7 +87,7 @@ SELECT i.title, i.cat, i.dt, i.size, i.hash
 FROM items_fts
 JOIN items i ON i.rowid = items_fts.rowid
 WHERE items_fts MATCH ?{cat_filter}
-ORDER BY i.{sort_col_sql} {sort_dir_sql}
+ORDER BY i.{sort_col} {sort_dir}
 LIMIT ? OFFSET ?
 """
         params_page = params + [per_page, offset]
