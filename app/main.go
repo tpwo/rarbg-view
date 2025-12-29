@@ -117,7 +117,6 @@ func getResults(db *sql.DB) http.HandlerFunc {
 		}
 
 		category := query.Get("category")
-
 		cats, ok := CATEGORY_MAP[category]
 		if !ok {
 			cats = nil
@@ -125,10 +124,10 @@ func getResults(db *sql.DB) http.HandlerFunc {
 
 		var catFilter string
 		if cats != nil {
-			for i := range cats {
-				cats[i] = fmt.Sprintf(`"%s"`, cats[i])
-			}
-			catFilter = fmt.Sprintf(" AND i.cat IN (%s)", strings.Join(cats, ","))
+			// We have to double quote each value in `cats`.
+			// So we have a first and last quote, and then we
+			// also join each element with quotes.
+			catFilter = fmt.Sprintf(" AND i.cat IN (\"%s\")", strings.Join(cats, "\",\""))
 		} else {
 			catFilter = ""
 		}
@@ -205,7 +204,7 @@ func getResults(db *sql.DB) http.HandlerFunc {
 			if size.Valid {
 				intSize = int(size.Int64)
 			} else {
-				intSize = 0 // or whatever default you want
+				intSize = 0
 			}
 
 			magnet := fmt.Sprintf("magnet:?xt=urn:btih:%s&dn=%s", hash, title)
