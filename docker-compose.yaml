@@ -1,8 +1,7 @@
 services:
   rarbg-view:
     container_name: server
-    build:
-      dockerfile: Dockerfile
+    image: ghcr.io/tpwo/rarbg-view:test
     command: ./rarbg-view
     # Default port is 1337. You can overwrite it in `.env` file
     ports:

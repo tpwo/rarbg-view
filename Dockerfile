@@ -5,7 +5,8 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY --parents app static /app/
+COPY ./app    /app/app
+COPY ./static /app/static/
 
 RUN go build -v -ldflags="-s -w" --tags fts5 -o rarbg-view ./app
 
