@@ -123,15 +123,14 @@ func prepareFTS5(db *sql.DB) {
 func getResults(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		LogRequest(r)
-
-		searchQuery, page, perPage, category, sortCol, sortDir := getUrlParams(r.URL.Query())
-		catFilter := getCatFilter(category)
+		p := getUrlParams(r.URL.Query())
+		catFilter := getCatFilter(p.categories)
 
 		queryStrCount := fmt.Sprintf(`
 			SELECT COUNT(*) FROM items_fts
 			JOIN items i ON i.rowid = items_fts.rowid
 			WHERE items_fts MATCH "%s"%s`,
-			searchQuery, catFilter,
+			p.searchQuery, catFilter,
 		)
 		LogDebug("COUNT(*) query: %s", queryStrCount)
 		var count int
@@ -143,7 +142,7 @@ func getResults(db *sql.DB) http.HandlerFunc {
 		}
 		LogDebug("Total count: %d", count)
 
-		offset := (page - 1) * perPage
+		offset := (p.page - 1) * p.perPage
 
 		queryStr := fmt.Sprintf(`
 			SELECT i.title, i.cat, i.dt, i.size, i.hash
@@ -152,7 +151,7 @@ func getResults(db *sql.DB) http.HandlerFunc {
 			WHERE items_fts MATCH "%s"%s
 			ORDER BY i."%s" %s
 			LIMIT %d OFFSET %d`,
-			searchQuery, catFilter, sortCol, sortDir, perPage, offset,
+			p.searchQuery, catFilter, p.sortCol, p.sortDir, p.perPage, offset,
 		)
 		LogDebug("SELECT query: %s", queryStr)
 
@@ -204,7 +203,16 @@ func getResults(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-func getUrlParams(q url.Values) (string, int, int, []string, string, string) {
+type params struct {
+	searchQuery string
+	page        int
+	perPage     int
+	categories  []string
+	sortCol     string
+	sortDir     string
+}
+
+func getUrlParams(q url.Values) params {
 	searchQuery := q.Get("search_query")
 
 	page, err := strconv.Atoi(q.Get("page"))
@@ -217,9 +225,9 @@ func getUrlParams(q url.Values) (string, int, int, []string, string, string) {
 		perPage = 20
 	}
 
-	category, ok := CATEGORY_MAP[q.Get("category")]
+	categories, ok := CATEGORY_MAP[q.Get("category")]
 	if !ok {
-		category = nil
+		categories = nil
 	}
 
 	sortCol := q.Get("sort_col")
@@ -240,9 +248,16 @@ Query parameters:
 	cat=%s
 	sort_col=%s
 	sort_dir=%s`,
-		searchQuery, page, perPage, category, sortCol, sortDir)
+		searchQuery, page, perPage, categories, sortCol, sortDir)
 
-	return searchQuery, page, perPage, category, sortCol, sortDir
+	return params{
+		searchQuery: searchQuery,
+		page:        page,
+		perPage:     perPage,
+		categories:  categories,
+		sortCol:     sortCol,
+		sortDir:     sortDir,
+	}
 }
 
 // Get SQL WHERE condition for filtering by category
