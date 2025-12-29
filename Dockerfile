@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY --parents app static /app/
 
-RUN go build -v -ldflags="-s -w" --tags fts5 -o rarbg-view ./app/main.go
+RUN go build -v -ldflags="-s -w" --tags fts5 -o rarbg-view ./app
 
 FROM ubuntu:24.04
 COPY --from=build /app/rarbg-view /app/rarbg-view

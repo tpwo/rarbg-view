@@ -8,11 +8,11 @@ go: build
 
 # compile the app (debug symbols removed with `-ldflags=-w`)
 build:
-	go build -v -ldflags="-s -w" --tags fts5 -o rarbg-view ./app/main.go
+	go build -v -ldflags="-s -w" --tags fts5 -o rarbg-view ./app
 
 # start server in debug mode (more logging)
 debug:
-	DEBUG=true go run -v --tags fts5 ./app/main.go
+	DEBUG=true go run -v --tags fts5 ./app
 
 # start server
 run:
