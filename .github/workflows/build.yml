@@ -45,4 +45,3 @@ jobs:
         push: true
         tags: |
           ghcr.io/${{ github.repository }}:${{ steps.tag.outputs.value }}
-          ghcr.io/${{ github.repository }}:${{ github.sha }}
