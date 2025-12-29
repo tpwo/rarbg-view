@@ -82,9 +82,38 @@ func getResults(db *sql.DB) http.HandlerFunc {
 		}
 		log.Print(count)
 
-		results := []Result{
-			{Title: "Test item 1", Cat: "xxx", Date: "2025-01-01", Size: 100, Magnet: "some-magnet-link"},
-			{Title: "Test item 2", Cat: "ebooks", Date: "2020-01-01", Size: 50, Magnet: "some-magnet-link"},
+		offset := (page - 1) * perPage
+
+		// TODO: cat_filter needs to be implemented
+		rows, err := db.Query(`
+			SELECT i.title, i.cat, i.dt, i.size, i.hash
+			FROM items_fts
+			JOIN items i ON i.rowid = items_fts.rowid
+			WHERE items_fts MATCH ?
+			ORDER BY i."title" ASC
+			LIMIT ? OFFSET ?
+			`,
+			searchQuery, perPage, offset,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows.Close()
+
+		var results []Result
+
+		for rows.Next() {
+			var title string
+			var cat string
+			var dt string
+			var size int
+			var hash string
+			err := rows.Scan(&title, &cat, &dt, &size, &hash)
+			if err != nil {
+				log.Fatal(err)
+			}
+			res := Result{title, cat, dt, size, hash}
+			results = append(results, res)
 		}
 
 		response := Response{
