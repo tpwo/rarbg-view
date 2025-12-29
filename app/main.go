@@ -163,7 +163,9 @@ func getResults(db *sql.DB) http.HandlerFunc {
 		var count int
 		err = db.QueryRow(queryStrCount).Scan(&count)
 		if err != nil {
-			log.Fatal(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("ERROR: %s", err)
+			return
 		}
 		log.Printf("Total count: %d", count)
 
@@ -183,7 +185,9 @@ func getResults(db *sql.DB) http.HandlerFunc {
 
 		rows, err := db.Query(queryStr)
 		if err != nil {
-			log.Fatal(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("ERROR: %s", err)
+			return
 		}
 		defer rows.Close()
 
@@ -198,7 +202,9 @@ func getResults(db *sql.DB) http.HandlerFunc {
 			var hash string
 			err := rows.Scan(&title, &cat, &dt, &size, &hash)
 			if err != nil {
-				log.Fatal(err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Printf("ERROR: %s", err)
+				return
 			}
 
 			var intSize int
