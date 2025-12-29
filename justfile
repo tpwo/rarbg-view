@@ -8,7 +8,7 @@ go: build
 
 # compile the app (debug symbols removed with `-ldflags=-w`)
 build:
-	go build -v -ldflags=-w --tags fts5 -o rarbg-view ./app/main.go
+	go build -v -ldflags="-s -w" --tags fts5 -o rarbg-view ./app/main.go
 
 # start server
 run:

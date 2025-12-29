@@ -1,4 +1,4 @@
-FROM golang:1.25
+FROM golang:1.25 AS build
 
 WORKDIR /app
 
@@ -7,6 +7,10 @@ RUN go mod download
 
 COPY --parents app static /app/
 
-RUN go build -v -ldflags=-w --tags fts5 -o rarbg-view ./app/main.go
+RUN go build -v -ldflags="-s -w" --tags fts5 -o rarbg-view ./app/main.go
 
+FROM ubuntu:24.04
+COPY --from=build /app/rarbg-view /app/rarbg-view
+COPY --from=build /app/static /app/static
+WORKDIR /app
 CMD ["./rarbg-view"]
