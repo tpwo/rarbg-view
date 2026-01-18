@@ -66,7 +66,7 @@ For running (*only via docker*) you can also define a `.env` file with `PORT`. R
 Note that you can run the app with any SQLite database compatible with this schema:
 
 ```sql
-$ sqlite3 rarbg_db.sqliten
+$ sqlite3 rarbg_db.sqlite
 SQLite version 3.43.2 2023-10-10 13:08:14
 sqlite> .tables
 items
@@ -155,7 +155,7 @@ Development notes for the maintainer(s).
 
 Docker images are pushed to [ghcr.io](https://github.com/tpwo/rarbg-view/pkgs/container/rarbg-view/)
 
-docker-compose.yaml[docker-compose.yaml] uses images pushed with `stable` tag, i.e.:
+[docker-compose.yaml](docker-compose.yaml) uses images pushed with `stable` tag, i.e.:
 
     ghcr.io/tpwo/rarbg-view:stable
 
